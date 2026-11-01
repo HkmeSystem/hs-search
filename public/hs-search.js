@@ -603,7 +603,13 @@
         else { remember(inp.value); st.all = true; if (!open) show(); else render(); }
       }
     });
-    if (inp.form) inp.form.addEventListener('submit', function (e) { e.preventDefault(); e.stopImmediatePropagation(); }, true);
+    if (inp.form) inp.form.addEventListener('submit', function (e) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      input = inp;
+      if (spaced(inp.value).length < 2) { inp.focus(); return; }
+      remember(inp.value); st.f = null; st.all = true;
+      if (!open) show(); else render();
+    }, true);
   }
   function init() {
     var s = document.createElement('style'); s.textContent = css; document.head.appendChild(s);
