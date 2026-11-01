@@ -392,6 +392,23 @@
     '@media (prefers-reduced-motion:reduce){.hss-ovp{transition:none}}' +
     '@media(max-width:520px){#hss .hss-main{padding:6px 12px 14px}.hss-row{align-items:flex-start;gap:10px}.hss-img{width:48px;height:48px;flex-basis:48px}.hss-name{font-size:14.5px}.hss-meta .hss-tag:nth-of-type(n+3){display:none}.hss-price strong{font-size:15px}.hss-cart{padding:4px 9px;font-size:11px}}' +
     '.hss-karlik{border:1px solid #e3eef7;border-radius:10px;padding:12px 14px;margin:10px 0;background:#f7fbfe}.hss-karlik a.hss-chip{text-decoration:none!important;display:inline-block}' +
+    '.hsp{font-family:"Source Sans 3",system-ui,sans-serif;color:#1f1f1f;margin-bottom:30px}.hsp-load{padding:40px 0;color:#6b7680;font-size:16px}' +
+    '.hsp-title{font:700 26px/1.2 "Exo 2",sans-serif;margin:6px 0 6px;color:#1f1f1f}.hsp-sub{color:#4d5862;font-size:15px;margin-bottom:12px}.hsp-sub strong{color:#1272b3}' +
+    '.hsp-cats{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.hsp-cat{display:inline-flex;align-items:center;gap:8px;padding:6px 8px 6px 14px;border-radius:999px;background:#1272b3;color:#fff!important;text-decoration:none!important;font-weight:600;font-size:14px}' +
+    '.hsp-cat:hover{background:#0d5a8f}.hsp-cat b{min-width:24px;height:22px;padding:0 7px;border-radius:999px;background:#ffc807;color:#1f1f1f;font:700 12px/22px "Exo 2",sans-serif;text-align:center}' +
+    '.hsp-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid #e3eef7;border-bottom:1px solid #e3eef7;margin:14px 0 16px}' +
+    '.hsp-sort{font:14px "Source Sans 3",sans-serif;padding:6px 10px;border:1px solid #cfe3f2;border-radius:6px;color:#0d5a8f;background:#fff}' +
+    '.hsp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}' +
+    '.hsp-card{display:flex;flex-direction:column;border:1px solid #e3eef7;border-radius:10px;padding:12px;background:#fff;cursor:pointer;transition:border-color .15s,box-shadow .15s}.hsp-card:hover{border-color:#1272b3;box-shadow:0 8px 22px rgba(13,90,143,.12)}' +
+    '.hsp-flags{min-height:22px}.hsp-img{display:block;width:100%;height:150px;object-fit:contain;margin:2px 0 10px}' +
+    '.hsp-name{font-weight:600;font-size:15px;line-height:1.3;color:#1f1f1f!important;text-decoration:none!important}.hsp-name b{color:#1272b3}' +
+    '.hsp-card .hss-meta{margin:6px 0 10px}.hsp-bot{margin-top:auto;display:flex;align-items:flex-end;justify-content:space-between;gap:8px}.hsp-bot .hss-price{text-align:left}' +
+    '.hsp-detail{font:700 12px "Exo 2",sans-serif;text-transform:uppercase;color:#1272b3!important;text-decoration:none!important}' +
+    '.hsp-arts{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin:8px 0 18px}.hsp-art{display:block;border-radius:10px;background:#1272b3;color:#fff!important;padding:14px 16px;text-decoration:none!important}' +
+    '.hsp-art:hover{background:#0d5a8f}.hsp-art span{font-weight:700;display:block;font-size:15px}.hsp-art small{color:#cfe6f7;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px;font-size:13px}' +
+    '.hsp .hss-more{max-width:360px;margin:20px auto 0}' +
+    '@media(max-width:520px){.hsp-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.hsp-img{height:110px}.hsp-card{padding:8px}.hsp-name{font-size:14px}.hsp-bot{flex-direction:column;align-items:stretch}.hsp-title{font-size:21px}.hsp-card .hss-tag:nth-of-type(n+2){display:none}}' +
+    'body.hsp-on main.content > *:not(.hsp){display:none!important}' +
     '.search-whisperer{display:none!important}';
 
   var thumb = function (u, size) { return u ? u.replace(/\/shop\/(orig|big|detail)\//, '/shop/' + (size || 'related') + '/') : ''; };
@@ -500,7 +517,7 @@
       main += '<div class="hss-hint"><span>' + (zig ? 'Zigbee zariadenia potrebujú na fungovanie bránu (hub).' : 'Z-Wave zariadenia sa pripájajú cez centrálnu jednotku, napríklad Homey alebo FIBARO Home Center.') +
         ' Ak ju ešte nemáte, ' + lk + 'pozrite si riadiace jednotky</a>.</span></div>';
     }
-    if (list.length > shown.length) main += '<button type="button" class="hss-more" data-more="1">Zobraziť ' + (st.all ? 'ďalšie' : 'všetkých ' + list.length) + ' produkty</button>';
+    if (list.length > shown.length) main += '<button type="button" class="hss-more" data-more="1">Zobraziť všetkých ' + list.length + ' ' + plural(list.length) + '</button>';
     if (C.debug) main += '<div class="hss-foot">Nové vyhľadávanie · <a href="/vyhladavanie/?string=' + encodeURIComponent(q) + '">porovnať s pôvodným vyhľadávaním</a></div>';
     var cc = {}, cn = {};
     r.res.forEach(function (x) {
@@ -519,6 +536,128 @@
     if (!pq.intent && arts.length) side += '<div class="hss-blogbox"><div class="hss-h">Z blogu</div>' + arts.slice(0, 2).map(artHtml).join('') + '<a class="hss-blogall" href="/blog/">Všetky články</a></div>';
     track(q, r.res.length);
     return side ? '<div class="hss-wrap"><div class="hss-main">' + main + '</div><div class="hss-side">' + side + '</div></div>' : '<div class="hss-main">' + main + '</div>';
+  }
+
+  /* ---------- stránka s výsledkami (/vyhladavanie/?string=...) ---------- */
+  var PG = { q: '', f: null, stock: false, sort: 'rel', lim: 24, root: null };
+  function plural(n) { return n === 1 ? 'produkt' : (n >= 2 && n <= 4) ? 'produkty' : 'produktov'; }
+  function isSearchPage() { return /^\/vyhladavanie\/?$/.test(location.pathname); }
+  function pageQuery() { try { return (new URLSearchParams(location.search).get('string') || '').trim(); } catch (e) { return ''; } }
+  function goSearch(q) {
+    q = (q || '').trim();
+    if (spaced(q).length < 2) { if (input) input.focus(); return; }
+    remember(q); hide();
+    var url = '/vyhladavanie/?string=' + encodeURIComponent(q);
+    if (isSearchPage() && PG.root) {
+      history.pushState(null, '', url);
+      PG.q = q; PG.f = null; PG.lim = 24;
+      if (input) input.blur();
+      renderPage(); window.scrollTo(0, 0);
+    } else location.href = url;
+  }
+  function catsFor(res, pq) {
+    var cc = {}, cn = {};
+    res.forEach(function (p) {
+      Array.from(new Set(p.cat.concat(p.dc).map(function (c) { return c.split('>').pop().trim(); }))).forEach(function (last) {
+        if (!last || /kompatibiln|^ostatn|black friday|dopredaj|^seo|works with|odbalen|zvyhodnen/i.test(last)) return;
+        if (!catLink(last)) return;
+        var gm = pq.terms.some(function (t) { return t.group && t.alts.some(function (al) { return toks(last).some(function (x) { return mt(x, al); }); }); });
+        cc[last] = (cc[last] || 0) + (gm ? 6 : 1); cn[last] = (cn[last] || 0) + 1;
+      });
+    });
+    var cats = Object.keys(cc).sort(function (a, b) { return cc[b] - cc[a]; });
+    if (cats.length && cc[cats[0]] >= 6) cats = cats.filter(function (c) { return cc[c] >= 6; });
+    return cats.slice(0, 6).map(function (c) { return [c, cn[c]]; });
+  }
+  function card(p, pq) {
+    var alt = '';
+    if (!p.ok && p.al.length) for (var k = 0; k < p.al.length; k++) { var a = IX.byCode.get(p.al[k]); if (a && a.ok) { alt = '<div class="hss-alt">Skladom je podobný: <a href="' + esc(a.u) + '">' + esc(a.n) + '</a></div>'; break; } }
+    var tags = p.proto.slice(0, 2).map(function (x) { return '<span class="hss-tag">' + x + '</span>'; }).join('') +
+      (p.fl.indexOf('custom3') >= 0 ? '<span class="hss-tag">Funguje s Homey</span>' : '') + (p.fl.indexOf('custom1') >= 0 ? '<span class="hss-tag">Funguje s FIBAROM</span>' : '');
+    return '<div class="hsp-card" data-u="' + esc(p.u) + '"><div class="hsp-flags">' + flagHtml(p) + '</div>' +
+      '<a href="' + esc(p.u) + '" tabindex="-1">' + imgTag(p.i, 'hsp-img', 'detail_small') + '</a>' +
+      '<a class="hsp-name" href="' + esc(p.u) + '">' + hl(p.n, pq) + '</a>' +
+      '<div class="hss-meta">' + availHtml(p) + tags + '</div>' + alt +
+      '<div class="hsp-bot"><div class="hss-price">' + priceHtml(p) + '</div>' +
+      (p.ok && !p.f && canCart() ? '<button type="button" class="hss-cart" data-c="' + esc(p.c) + '">Do košíka</button>' : '<a class="hsp-detail" href="' + esc(p.u) + '">Detail</a>') + '</div></div>';
+  }
+  function renderPage() {
+    if (!PG.root || !IX) return;
+    var q = PG.q, h = '';
+    document.querySelectorAll('input[name="string"]').forEach(function (i) { if (document.activeElement !== i) i.value = q; });
+    if (spaced(q).length < 2) {
+      PG.root.innerHTML = '<h1 class="hsp-title">Vyhľadávanie</h1><div class="hsp-sub">Napíšte, čo hľadáte, alebo skúste niečo z obľúbených hľadaní:</div><div class="hss-chips">' +
+        POPULAR.map(function (x) { return '<button type="button" class="hss-chip" data-q="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>';
+      return;
+    }
+    var r = search(q), pq = r.pq, all = r.res.map(function (x) { return x.p; }), partial = r.res.length && r.res[0].partial;
+    var list = all.filter(function (p) { return (!PG.f || p.proto.indexOf(PG.f) >= 0) && (!PG.stock || p.ok); });
+    if (PG.sort === 'asc') list = list.slice().sort(function (a, b) { return a.p - b.p; });
+    if (PG.sort === 'desc') list = list.slice().sort(function (a, b) { return b.p - a.p; });
+    var arts = searchArticles(pq), cats = catsFor(all.slice(0, 60), pq);
+    var kq = spaced(q), kStrong = /\b(karlik\w*|deco|icon|ramik\w*|ramcek\w*|ramc\w*)\b/.test(kq), kWeak = /\b(vypinac\w*|zasuvk\w*|dvojzasuvk\w*|zasuvka)\b/.test(kq);
+    h += '<h1 class="hsp-title">Výsledky pre „' + esc(q) + '“</h1><div class="hsp-sub">' + all.length + ' ' + plural(all.length) +
+      (pq.fixes.length ? ' · zobrazujem výsledky pre <strong>' + esc(pq.fixes.join(', ')) + '</strong>' : '') +
+      (pq.labels.length ? ' · hľadám: <strong>' + esc(pq.labels.join(', ')) + '</strong>' : '') + '</div>';
+    if (KARLIK && kStrong) h += karlikHtml();
+    if (cats.length) h += '<div class="hsp-cats">' + cats.map(function (c) { return '<a class="hsp-cat" href="' + esc(catLink(c[0])) + '">' + esc(c[0]) + ' <b>' + c[1] + '</b></a>'; }).join('') + '</div>';
+    if (pq.intent && arts.length) h += '<div class="hss-h">Návody a články</div><div class="hsp-arts">' + arts.slice(0, 3).map(function (a) { return '<a class="hsp-art" href="' + esc(a.u) + '"><span>' + esc(a.t) + '</span>' + (a.d ? '<small>' + esc(a.d) + '</small>' : '') + '</a>'; }).join('') + '</div>';
+    if (all.length) {
+      var pc = {}; all.forEach(function (p) { p.proto.forEach(function (k) { pc[k] = (pc[k] || 0) + 1; }); });
+      var pk = PROTOS.map(function (x) { return x[1]; }).filter(function (k) { return pc[k] && (pc[k] < all.length || PG.f === k); });
+      h += '<div class="hsp-bar"><div class="hss-chips" style="margin:0">' +
+        '<button type="button" class="hss-chip' + (PG.stock ? ' on' : '') + '" data-stock="1">Len skladom</button>' +
+        pk.map(function (k) { return '<button type="button" class="hss-chip' + (PG.f === k ? ' on' : '') + '" data-pf="' + k + '">' + k + ' <span style="opacity:.7">' + pc[k] + '</span></button>'; }).join('') +
+        '</div><select class="hsp-sort" aria-label="Zoradiť"><option value="rel"' + (PG.sort === 'rel' ? ' selected' : '') + '>Najrelevantnejšie</option><option value="asc"' + (PG.sort === 'asc' ? ' selected' : '') + '>Najlacnejšie</option><option value="desc"' + (PG.sort === 'desc' ? ' selected' : '') + '>Najdrahšie</option></select></div>';
+    }
+    if (partial) h += '<div class="hss-note">Presnú zhodu sme nenašli, toto sú najbližšie výsledky.</div>';
+    if (!all.length && !(KARLIK && kStrong)) h += '<div class="hss-empty">Pre „' + esc(q) + '“ sme nenašli žiadny produkt. Skúste iné slovo alebo <a href="' + esc(CONTACT) + '">nám napíšte</a>, radi poradíme.</div><div class="hss-chips">' +
+      POPULAR.map(function (x) { return '<button type="button" class="hss-chip" data-q="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>';
+    if (all.length && !list.length) h += '<div class="hss-empty">S týmito filtrami nič nemáme, skúste niektorý vypnúť.</div>';
+    h += '<div class="hsp-grid">' + list.slice(0, PG.lim).map(function (p) { return card(p, pq); }).join('') + '</div>';
+    if (list.length > PG.lim) h += '<button type="button" class="hss-more" data-pmore="1">Zobraziť ďalšie (' + (list.length - PG.lim) + ')</button>';
+    var zb = list.slice(0, 12).filter(function (p) { return p.proto.indexOf('Zigbee') >= 0 && p.proto.indexOf('Wi-Fi') < 0; }).length;
+    var zw = list.slice(0, 12).filter(function (p) { return p.proto.indexOf('Z-Wave') >= 0; }).length;
+    if (pq.labels.indexOf('Riadiace jednotky a brány') < 0 && (zb >= 2 || zw >= 2)) {
+      var zig = zb >= zw, cl = catLink(zig ? 'Riadiace jednotky ZigBee' : 'Riadiace jednotky Z-Wave');
+      h += '<div class="hss-hint"><span>' + (zig ? 'Zigbee zariadenia potrebujú na fungovanie bránu (hub).' : 'Z-Wave zariadenia sa pripájajú cez centrálnu jednotku, napríklad Homey alebo FIBARO Home Center.') +
+        ' Ak ju ešte nemáte, ' + (cl ? '<a href="' + esc(cl) + '">' : '<a href="#" data-q="' + (zig ? 'zigbee brána' : 'zwave centrálna jednotka') + '">') + 'pozrite si riadiace jednotky</a>.</span></div>';
+    }
+    if (KARLIK && kWeak && !kStrong) h += karlikHtml();
+    if (!pq.intent && arts.length) h += '<div class="hss-h" style="margin-top:28px">Z blogu</div><div class="hsp-arts">' + arts.slice(0, 3).map(function (a) { return '<a class="hsp-art" href="' + esc(a.u) + '"><span>' + esc(a.t) + '</span>' + (a.d ? '<small>' + esc(a.d) + '</small>' : '') + '</a>'; }).join('') + '</div>';
+    PG.root.innerHTML = h;
+    document.title = 'Výsledky pre „' + q + '“ | HomeSystem.sk';
+    track(q, all.length);
+  }
+  function onPageClick(ev) {
+    var t = ev.target, q = t.closest('[data-q]'), pf = t.closest('[data-pf]'), sk = t.closest('[data-stock]'), pm = t.closest('[data-pmore]'), cart = t.closest('[data-c]');
+    if (q) { ev.preventDefault(); goSearch(q.getAttribute('data-q')); return; }
+    if (pf) { var k = pf.getAttribute('data-pf'); PG.f = PG.f === k ? null : k; PG.lim = 24; renderPage(); return; }
+    if (sk) { PG.stock = !PG.stock; PG.lim = 24; renderPage(); return; }
+    if (pm) { PG.lim += 24; renderPage(); return; }
+    if (cart) {
+      ev.preventDefault();
+      try { shoptet.cartShared.addToCart({ productCode: cart.getAttribute('data-c') }); cart.textContent = 'Pridané'; }
+      catch (e) { var p = IX.byCode.get(cart.getAttribute('data-c')); if (p) location.href = p.u; }
+      return;
+    }
+    if (t.closest('a[href]')) return;
+    var c = t.closest('.hsp-card'); if (c) location.href = c.getAttribute('data-u');
+  }
+  function initPage(start) {
+    var main = document.querySelector('main.content') || document.getElementById('content');
+    if (!main) return;
+    PG.q = pageQuery();
+    PG.root = document.createElement('div'); PG.root.className = 'hsp';
+    PG.root.innerHTML = '<div class="hsp-load">Hľadám…</div>';
+    main.insertBefore(PG.root, main.firstChild);
+    document.body.classList.add('hsp-on');
+    PG.root.addEventListener('click', onPageClick);
+    PG.root.addEventListener('change', function (e) { if (e.target.classList.contains('hsp-sort')) { PG.sort = e.target.value; renderPage(); } });
+    window.addEventListener('popstate', function () { PG.q = pageQuery(); PG.f = null; PG.lim = 24; renderPage(); });
+    var l = start();
+    if (!l) { document.body.classList.remove('hsp-on'); PG.root.remove(); PG.root = null; return; }
+    l.then(renderPage).catch(function () { document.body.classList.remove('hsp-on'); if (PG.root) PG.root.remove(); PG.root = null; });
   }
 
   /* ---------- recent searches, tracking ---------- */
@@ -574,7 +713,7 @@
     var t = ev.target, q = t.closest('[data-q]'), f = t.closest('[data-f]'), more = t.closest('[data-more]'), cart = t.closest('[data-c]');
     if (q) { ev.preventDefault(); input.value = q.getAttribute('data-q'); st.f = null; st.all = false; input.focus(); render(); return; }
     if (f) { var k = f.getAttribute('data-f'); st.f = st.f === k ? null : k; render(); return; }
-    if (more) { if (st.all) st.lim += 30; st.all = true; render(); return; }
+    if (more) { goSearch(input.value); return; }
     if (cart) {
       ev.preventDefault();
       try { shoptet.cartShared.addToCart({ productCode: cart.getAttribute('data-c') }); cart.textContent = 'Pridané'; }
@@ -600,15 +739,13 @@
       else if (e.key === 'Enter') {
         e.preventDefault(); e.stopPropagation();
         if (st.act >= 0 && st.list[st.act]) go(st.list[st.act].u);
-        else { remember(inp.value); st.all = true; if (!open) show(); else render(); }
+        else { input = inp; goSearch(inp.value); }
       }
     });
     if (inp.form) inp.form.addEventListener('submit', function (e) {
       e.preventDefault(); e.stopImmediatePropagation();
       input = inp;
-      if (spaced(inp.value).length < 2) { inp.focus(); return; }
-      remember(inp.value); st.f = null; st.all = true;
-      if (!open) show(); else render();
+      goSearch(inp.value);
     }, true);
   }
   function init() {
@@ -649,7 +786,8 @@
     document.querySelectorAll('input[name="string"]').forEach(function (i) {
       i.addEventListener('focus', start); i.addEventListener('pointerenter', start); i.addEventListener('touchstart', start, { passive: true });
     });
-    if ('requestIdleCallback' in window) requestIdleCallback(function () { setTimeout(start, 2500); }); else setTimeout(start, 4000);
+    if (isSearchPage()) initPage(start);
+    else if ('requestIdleCallback' in window) requestIdleCallback(function () { setTimeout(start, 2500); }); else setTimeout(start, 4000);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
