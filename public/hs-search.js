@@ -1,10 +1,65 @@
-/* HomeSystem.sk – nové vyhľadávanie v1.0 | index: index.json vedľa tohto súboru */
+/* HomeSystem.sk – nové vyhľadávanie v1.1 (SK/CS/EN) | index: index.json, index-cs.json, index-en.json vedľa tohto súboru */
 (function () {
   'use strict';
   if (window.__HSS_LOADED) return;
   var SRC = (document.currentScript && document.currentScript.src) || '';
+  var LANGS = { sk: { idx: 'index.json', search: '/vyhladavanie/' }, cs: { idx: 'index-cs.json', search: '/cs/vyhledavani/' }, en: { idx: 'index-en.json', search: '/en/search/' } };
+  var DL0 = (function () { try { return (window.dataLayer && window.dataLayer[0] && window.dataLayer[0].shoptet) || {}; } catch (e) { return {}; } })();
+  var L = (function () {
+    var l = String(DL0.language || document.documentElement.lang || '').slice(0, 2).toLowerCase();
+    if (!LANGS[l]) l = /^\/cs\//.test(location.pathname) ? 'cs' : /^\/en\//.test(location.pathname) ? 'en' : 'sk';
+    return l;
+  })();
+  var LI = { sk: 0, cs: 1, en: 2 }[L];
+  var CUR = (DL0.currencyInfo && +DL0.currencyInfo.exchangeRate) ? DL0.currencyInfo : { exchangeRate: 1, priceDecimalPlaces: 2, symbol: '€', symbolLeft: 1, decimalSeparator: ',', thousandSeparator: ' ' };
+  var TT = {
+    sk: { recent: 'Vaše posledné hľadania', popular: 'Ľudia často hľadajú', news: 'Novinky v ponuke', sale: 'Akcie, ktoré končia', looking: 'Hľadám:', fixed: 'Zobrazujem výsledky pre',
+      partial: 'Presnú zhodu sme nenašli, toto sú najbližšie výsledky.', none1: 'Pre „', none2: '“ sme nenašli žiadny produkt. Skúste iné slovo alebo ', none3: 'nám napíšte', none4: ', radi poradíme.',
+      cats: 'Kategórie', blog: 'Z blogu', allArts: 'Všetky články', guides: 'Návody a články', products: 'Produkty', stock: 'Skladom', pcs: 'ks', central: 'Centrálny sklad', unavail: 'Nedostupné',
+      tip: 'Odporúčame', isNew: 'Novinka', saleToday: 'Zľava končí dnes', saleDays: function (d) { return 'Zľava ešte ' + d + ' dni'; }, from: 'od ', homey: 'Funguje s Homey', fibaro: 'Funguje s FIBAROM',
+      similar: 'Skladom je podobný:', 'for': 'za', cart: 'Do košíka', added: 'Pridané',
+      zigHint: 'Zigbee zariadenia potrebujú na fungovanie bránu (hub).', zwHint: 'Z-Wave zariadenia sa pripájajú cez centrálnu jednotku, napríklad Homey alebo FIBARO Home Center.',
+      ifNot: ' Ak ju ešte nemáte, ', seeHubs: 'pozrite si riadiace jednotky', zigQ: 'zigbee brána', zwQ: 'zwave centrálna jednotka',
+      karTitle: 'Vypínače a zásuvky Karlik', karText: 'Kompletný sortiment Karlik nájdete v samostatnej kategórii.', karAll: 'Celá ponuka Karlik →',
+      loading: 'Načítavam produkty…', resFor: 'Výsledky pre', q1: '„', q2: '“', search: 'Vyhľadávanie', searchHint: 'Napíšte, čo hľadáte, alebo skúste niečo z obľúbených hľadaní:',
+      onlyStock: 'Len skladom', sort: 'Zoradiť', rel: 'Najrelevantnejšie', asc: 'Najlacnejšie', desc: 'Najdrahšie', more: 'Zobraziť ďalšie', noFilter: 'S týmito filtrami nič nemáme, skúste niektorý vypnúť.',
+      lookingLow: 'hľadám:', fixedLow: 'zobrazujem výsledky pre', detail: 'Detail', searching: 'Hľadám…', blogUrl: '/blog/',
+      plural: function (n) { return n === 1 ? 'produkt' : (n >= 2 && n <= 4) ? 'produkty' : 'produktov'; },
+      showAll: function (n) { return (n >= 2 && n <= 4 ? 'Zobraziť všetky ' : 'Zobraziť všetkých ') + n + ' ' + this.plural(n); },
+      popularQ: ['senzor úniku vody', 'termostatická hlavica', 'zigbee brána', 'smart zámok', 'shelly', 'homey'] },
+    cs: { recent: 'Vaše poslední hledání', popular: 'Lidé často hledají', news: 'Novinky v nabídce', sale: 'Akce, které končí', looking: 'Hledám:', fixed: 'Zobrazuji výsledky pro',
+      partial: 'Přesnou shodu jsme nenašli, toto jsou nejbližší výsledky.', none1: 'Pro „', none2: '“ jsme nenašli žádný produkt. Zkuste jiné slovo nebo ', none3: 'nám napište', none4: ', rádi poradíme.',
+      cats: 'Kategorie', blog: 'Z blogu', allArts: 'Všechny články', guides: 'Návody a články', products: 'Produkty', stock: 'Skladem', pcs: 'ks', central: 'Centrální sklad', unavail: 'Nedostupné',
+      tip: 'Doporučujeme', isNew: 'Novinka', saleToday: 'Sleva končí dnes', saleDays: function (d) { return 'Sleva ještě ' + d + (d <= 4 ? ' dny' : ' dní'); }, from: 'od ', homey: 'Funguje s Homey', fibaro: 'Funguje s FIBAREM',
+      similar: 'Skladem je podobný:', 'for': 'za', cart: 'Do košíku', added: 'Přidáno',
+      zigHint: 'Zigbee zařízení potřebují ke svému fungování bránu (hub).', zwHint: 'Z-Wave zařízení se připojují přes centrální jednotku, například Homey nebo FIBARO Home Center.',
+      ifNot: ' Pokud ji ještě nemáte, ', seeHubs: 'podívejte se na řídicí jednotky', zigQ: 'zigbee brána', zwQ: 'zwave centrální jednotka',
+      karTitle: 'Vypínače a zásuvky Karlik', karText: 'Kompletní sortiment Karlik najdete v samostatné kategorii.', karAll: 'Celá nabídka Karlik →',
+      loading: 'Načítám produkty…', resFor: 'Výsledky pro', q1: '„', q2: '“', search: 'Vyhledávání', searchHint: 'Napište, co hledáte, nebo zkuste něco z oblíbených hledání:',
+      onlyStock: 'Jen skladem', sort: 'Seřadit', rel: 'Nejrelevantnější', asc: 'Nejlevnější', desc: 'Nejdražší', more: 'Zobrazit další', noFilter: 'S těmito filtry nic nemáme, zkuste některý vypnout.',
+      lookingLow: 'hledám:', fixedLow: 'zobrazuji výsledky pro', detail: 'Detail', searching: 'Hledám…', blogUrl: '/cs/blog/',
+      plural: function (n) { return n === 1 ? 'produkt' : (n >= 2 && n <= 4) ? 'produkty' : 'produktů'; },
+      showAll: function (n) { return (n >= 2 && n <= 4 ? 'Zobrazit všechny ' : 'Zobrazit všech ') + n + ' ' + this.plural(n); },
+      popularQ: ['senzor úniku vody', 'termostatická hlavice', 'zigbee brána', 'chytrý zámek', 'shelly', 'homey'] },
+    en: { recent: 'Your recent searches', popular: 'Popular searches', news: 'New arrivals', sale: 'Deals ending soon', looking: 'Looking for:', fixed: 'Showing results for',
+      partial: 'No exact match found, here are the closest results.', none1: 'We couldn’t find any products for “', none2: '”. Try another word or ', none3: 'contact us', none4: ', we’re happy to help.',
+      cats: 'Categories', blog: 'From the blog', allArts: 'All articles', guides: 'Guides & articles', products: 'Products', stock: 'In stock', pcs: 'pcs', central: 'Central warehouse', unavail: 'Unavailable',
+      tip: 'Recommended', isNew: 'New', saleToday: 'Sale ends today', saleDays: function (d) { return 'Sale ends in ' + d + ' days'; }, from: 'from ', homey: 'Works with Homey', fibaro: 'Works with FIBARO',
+      similar: 'Similar item in stock:', 'for': 'for', cart: 'Add to cart', added: 'Added',
+      zigHint: 'Zigbee devices need a gateway (hub) to work.', zwHint: 'Z-Wave devices connect through a controller, such as Homey or FIBARO Home Center.',
+      ifNot: ' If you don’t have one yet, ', seeHubs: 'see our controllers', zigQ: 'zigbee gateway', zwQ: 'zwave controller',
+      karTitle: 'Karlik switches and sockets', karText: 'You’ll find the full Karlik range in a separate category.', karAll: 'All Karlik products →',
+      loading: 'Loading products…', resFor: 'Results for', q1: '“', q2: '”', search: 'Search', searchHint: 'Type what you’re looking for, or try a popular search:',
+      onlyStock: 'In stock only', sort: 'Sort', rel: 'Most relevant', asc: 'Lowest price', desc: 'Highest price', more: 'Show more', noFilter: 'Nothing matches these filters, try turning one off.',
+      lookingLow: 'looking for:', fixedLow: 'showing results for', detail: 'Details', searching: 'Searching…', blogUrl: '/en/blog/',
+      plural: function (n) { return n === 1 ? 'product' : 'products'; },
+      showAll: function (n) { return 'Show all ' + n + ' ' + this.plural(n); },
+      popularQ: ['water leak sensor', 'radiator thermostat', 'zigbee gateway', 'smart lock', 'shelly', 'homey'] }
+  };
+  var T = TT[L], RKEY = L === 'sk' ? 'hss_recent' : 'hss_recent_' + L, HUB = null;
+  var CATX = /kompatibiln|^ostatn|^other|black friday|dopredaj|doprodej|^seo|works with|compatible|odbalen|rozbalen|unbox|zvyhodnen|bundle|clearance/;
   var C = Object.assign({
-    exportUrl: null, indexUrl: SRC ? SRC.replace(/[?#].*$/, '').replace(/[^/]+$/, 'index.json') : null,
+    exportUrl: null, indexUrl: SRC ? SRC.replace(/[?#].*$/, '').replace(/[^/]+$/, LANGS[L].idx) : null,
     test: /[?&]test=1/.test(SRC), track: true, badge: false, debug: false, drop: 8, contact: '/kontakty/'
   }, window.HSS_CONFIG || {});
   /* testovací režim: zapne sa len návštevníkovi s ?novehladanie=1 (vypne ?novehladanie=0) */
@@ -27,7 +82,14 @@
   };
   var toks = function (s) { return spaced(s).split(' ').filter(Boolean); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
-  var money = function (v) { return '€' + v.toLocaleString('sk-SK', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 }); };
+  var money = function (v) {
+    var d = +CUR.priceDecimalPlaces, x = v * (+CUR.exchangeRate || 1);
+    x = Math.round(x * Math.pow(10, d)) / Math.pow(10, d);
+    if (d > 0 && x % 1 === 0) d = 0;
+    var parts = x.toFixed(d).split('.');
+    var num = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, CUR.thousandSeparator || ' ') + (parts[1] ? (CUR.decimalSeparator || ',') + parts[1] : '');
+    return +CUR.symbolLeft ? CUR.symbol + num : num + ' ' + CUR.symbol;
+  };
   var stem = function (t) { return t.length <= 4 ? t : t.slice(0, Math.max(4, t.length - (t.length >= 8 ? 3 : 2))); };
   var mt = function (tok, a, exact) {
     if (a.charAt(0) === '=') { a = a.slice(1); exact = true; }
@@ -46,32 +108,33 @@
 
   /* ---------- smart home dictionary ---------- */
   var G = [
-    { n: 'Ovládanie garáže', re: /garaz\w*( bran\w*)?|\bvrat[aiou]?\b/, alt: ['garaz', 'vrata', 'garage'] },
-    { n: 'Senzory úniku vody', re: /zaplav\w*|vytop\w*|zatop\w*|flood|leak|unik\w* vod\w*/, alt: ['vytop', 'unik', 'flood', 'leak', 'zaplav'] },
-    { n: 'Zavlažovanie', re: /zavlaz\w*|polievan\w*|zahrad\w*|irrigat\w*/, alt: ['zavlaz', 'polievan', 'zahrad', 'irrigat', 'hydro'] },
-    { n: 'Štartovacie sady', re: /\bzacat\w*|zaciatok|zaciatocnik\w*|starter\w*|startovac\w*/, alt: ['starter', 'startovac', 'zvyhodnen'] },
-    { n: 'Smart zásuvky', re: /\bplug\w*|zasuv\w*|predlzov\w*/, alt: ['zasuv', 'plug', 'predlzov'] },
-    { n: 'Radiátorové hlavice', re: /(termostatick\w* )?hlavic\w*|\btrv\b|radiatorov\w*( hlav\w*)?/, alt: ['hlavic', '=trv', 'radiator'] },
-    { n: 'Senzory dverí a okien', re: /\bdver\w*|\bokn\w*|\bokien\b|\bdoor\b|\bwindow\b/, alt: ['dver', 'okn', 'okien', '=door', '=window'] },
-    { n: 'Senzory pohybu a prítomnosti', re: /pohyb\w*|\bpir\b|motion|pritomn\w*|mmwave|prezenc\w*/, alt: ['pohyb', 'pir', 'motion', 'pritomn', 'mmwave', 'presence'] },
-    { n: 'Dymové senzory', re: /\bdym\w*|pozar\w*|smoke/, alt: ['dym', 'smoke', 'pozar'] },
-    { n: 'Detektory CO', re: /oxid\w* uhol\w*|\bco\b (senzor\w*|detektor\w*)|(senzor\w*|detektor\w*) co\b/, alt: ['uhol', 'co'] },
-    { n: 'Stmievače', re: /stmiev\w*|dimmer\w*/, alt: ['stmiev', 'dimmer'] },
-    { n: 'Tienenie', re: /zaluzi\w*|rolet\w*|tienen\w*|\bshade\w*|\bblind\w*|roller\w*|markiz\w*/, alt: ['zaluz', 'rolet', 'shade', 'blind', 'roller', 'tienen', 'markiz'] },
-    { n: 'Garniže', re: /garniz\w*|zaves\w*|zaclon\w*|curtain\w*/, alt: ['garniz', 'curtain', 'zaves', 'zaclon'] },
-    { n: 'Kamery', re: /kamer\w*|camera\w*/, alt: ['kamer', 'camera', 'cam'] },
-    { n: 'Zvončeky', re: /zvonc\w*|zvonek\w*|doorbell\w*|videozvon\w*/, alt: ['zvonc', 'zvonek', 'doorbell', 'videozvon'] },
-    { n: 'Smart zámky', re: /zamk\w*|zamok|zamka|smartlock|\block\b/, alt: ['zamk', 'zamok', 'zamka', 'lock', 'smartlock'] },
-    { n: 'Termostaty', re: /termostat(?!ick)\w*|thermostat\w*/, alt: ['termostat', 'thermostat'] },
-    { n: 'Teplota a vlhkosť', re: /teplot\w*|vlhkost\w*|teplomer\w*|vlhkomer\w*|klimatick\w* senzor\w*/, alt: ['teplot', 'vlhk', 'teplomer', 'climate', 'klimatick'] },
-    { n: 'Ovládanie klimatizácie', re: /klimatiz\w*|\bir\b|infra\w*/, alt: ['klimatiz', 'ir', 'infra'] },
-    { n: 'Ventily na vodu', re: /ventil\w*|uzaver\w*|valve/, alt: ['ventil', 'uzaver', 'valve'] },
-    { n: 'Meranie spotreby', re: /spotreb\w*|elektromer\w*|merac\w* energ\w*|energy|merani\w*/, alt: ['spotreb', 'elektromer', 'energ', 'merac', 'meran'] },
-    { n: 'Nabíjanie elektromobilov', re: /elektromobil\w*|wallbox|nabijack\w*|\bev\b/, alt: ['elektromobil', 'wallbox', 'nabijack'] },
-    { n: 'Sirény a alarmy', re: /siren\w*|alarm\w*|zabezpec\w*/, alt: ['siren', 'alarm', 'zabezpec', 'ajax'] },
-    { n: 'Osvetlenie', re: /osvetlen\w*|svetl\w*|ziarov\w*|zarov\w*|\bbulb\w*|\bled\b/, alt: ['osvetl', 'svetl', 'ziarov', 'zarov', 'bulb', 'led'] },
-    { n: 'Riadiace jednotky a brány', re: /\bhub\w*|centraln\w* jednot\w*|riadiac\w* jednot\w*|gateway|bridge|\bbran[aueyo]?\b|dongle|koordinator\w*/, alt: ['hub', 'gateway', 'bridge', 'bran', 'jednotk', 'controller', 'dongle', 'koordinator'] }
+    { n: ['Ovládanie garáže', 'Ovládání garáže', 'Garage control'], re: /garaz\w*( bran\w*| vrat\w*)?|\bvrat[aiou]?\b|garage( doors?)?/, alt: ['garaz', 'vrata', 'garage'] },
+    { n: ['Senzory úniku vody', 'Senzory úniku vody', 'Water leak sensors'], re: /zaplav\w*|vytop\w*|zatop\w*|flood\w*|leak\w*|unik\w* vod\w*|water sensor\w*/, alt: ['vytop', 'unik', 'flood', 'leak', 'zaplav', 'zatop'] },
+    { n: ['Zavlažovanie', 'Zavlažování', 'Irrigation'], re: /zavlaz\w*|polievan\w*|zalevan\w*|zahrad\w*|irrigat\w*|\bgarden\w*|sprinkler\w*/, alt: ['zavlaz', 'polievan', 'zalevan', 'zahrad', 'irrigat', 'garden', 'hydro'] },
+    { n: ['Štartovacie sady', 'Startovací sady', 'Starter kits'], re: /\bzacat\w*|\bzacit\w*|zaciatok|zacatek|zaciatocnik\w*|zacatecnik\w*|starter\w*|startovac\w*|getting started|beginner\w*/, alt: ['starter', 'startovac', 'zvyhodnen', 'bundle'] },
+    { n: ['Smart zásuvky', 'Chytré zásuvky', 'Smart plugs'], re: /\bplug\w*|zasuv\w*|predlzov\w*|prodluzov\w*|\bsocket\w*|\boutlet\w*/, alt: ['zasuv', 'plug', 'predlzov', 'prodluz', 'socket', 'outlet'] },
+    { n: ['Radiátorové hlavice', 'Radiátorové hlavice', 'Radiator thermostats'], re: /(termostatick\w* )?hlavic\w*|\btrv\b|radiatorov\w*( hlav\w*)?|radiator( valves?| thermostats?)?|thermostatic (radiator )?valves?/, alt: ['hlavic', '=trv', 'radiator'] },
+    { n: ['Senzory dverí a okien', 'Senzory dveří a oken', 'Door & window sensors'], re: /\bdver\w*|\bokn\w*|\bokien\b|\boken\b|\bdoors?\b|\bwindows?\b|contact sensors?/, alt: ['dver', 'okn', 'okien', 'oken', '=door', '=doors', 'window', 'contact'] },
+    { n: ['Senzory pohybu a prítomnosti', 'Senzory pohybu a přítomnosti', 'Motion & presence sensors'], re: /pohyb\w*|\bpir\b|motion|pritomn\w*|mmwave|prezenc\w*|presence|occupancy/, alt: ['pohyb', 'pir', 'motion', 'pritomn', 'mmwave', 'presence', 'occupancy'] },
+    { n: ['Dymové senzory', 'Kouřové senzory', 'Smoke detectors'], re: /\bdym\w*|\bkour\w*|pozar\w*|smoke/, alt: ['dym', 'kour', 'smoke', 'pozar'] },
+    { n: ['Detektory CO', 'Detektory CO', 'CO detectors'], re: /oxid\w* uhol\w*|oxid\w* uhelnat\w*|carbon monoxide|\bco\b (senzor\w*|detektor\w*|sensors?|detectors?)|(senzor\w*|detektor\w*|sensors?|detectors?) co\b/, alt: ['uhol', 'uhelnat', 'monoxide', 'co'] },
+    { n: ['Stmievače', 'Stmívače', 'Dimmers'], re: /stmiev\w*|stmiv\w*|dimmer\w*/, alt: ['stmiev', 'stmiv', 'dimmer'] },
+    { n: ['Tienenie', 'Stínění', 'Shading'], re: /zaluzi\w*|rolet\w*|tienen\w*|stinen\w*|\bshade\w*|\bblind\w*|roller\w*|shutter\w*|markiz\w*|awning\w*/, alt: ['zaluz', 'rolet', 'shade', 'blind', 'roller', 'shutter', 'tienen', 'stinen', 'markiz', 'awning'] },
+    { n: ['Garniže', 'Garnýže', 'Curtain rails'], re: /garniz\w*|garnyz\w*|zaves\w*|zaclon\w*|curtain\w*/, alt: ['garniz', 'garnyz', 'curtain', 'zaves', 'zaclon'] },
+    { n: ['Kamery', 'Kamery', 'Cameras'], re: /kamer\w*|camera\w*/, alt: ['kamer', 'camera', 'cam'] },
+    { n: ['Zvončeky', 'Zvonky', 'Doorbells'], re: /zvonc\w*|zvonek\w*|zvonk\w*|doorbell\w*|videozvon\w*|intercom\w*/, alt: ['zvonc', 'zvonek', 'zvonk', 'doorbell', 'videozvon', 'intercom'] },
+    { n: ['Smart zámky', 'Chytré zámky', 'Smart locks'], re: /zamk\w*|zamok|zamka|zamek|smartlock|\blocks?\b/, alt: ['zamk', 'zamok', 'zamka', 'zamek', 'lock', 'smartlock'] },
+    { n: ['Termostaty', 'Termostaty', 'Thermostats'], re: /termostat(?!ick)\w*|thermostat(?!ic)\w*/, alt: ['termostat', 'thermostat'] },
+    { n: ['Teplota a vlhkosť', 'Teplota a vlhkost', 'Temperature & humidity'], re: /teplot\w*|vlhkost\w*|teplomer\w*|vlhkomer\w*|klimatick\w* senzor\w*|temperature|humidity|thermometer\w*|hygrometer\w*/, alt: ['teplot', 'vlhk', 'teplomer', 'climate', 'klimatick', 'temperature', 'humidity', 'thermometer'] },
+    { n: ['Ovládanie klimatizácie', 'Ovládání klimatizace', 'Air conditioning control'], re: /klimatiz\w*|\bir\b|infra\w*|air ?condition\w*|aircon\w*/, alt: ['klimatiz', 'ir', 'infra', 'aircon', 'conditioner'] },
+    { n: ['Ventily na vodu', 'Ventily na vodu', 'Water valves'], re: /ventil\w*|uzaver\w*|valves?\b/, alt: ['ventil', 'uzaver', 'valve'] },
+    { n: ['Meranie spotreby', 'Měření spotřeby', 'Energy metering'], re: /spotreb\w*|elektromer\w*|merac\w* energ\w*|energy\w*|merani\w*|power meters?|consumption/, alt: ['spotreb', 'elektromer', 'energ', 'merac', 'meran', 'consumption'] },
+    { n: ['Nabíjanie elektromobilov', 'Nabíjení elektromobilů', 'EV charging'], re: /elektromobil\w*|wallbox|nabijack\w*|nabijec\w*|\bev\b|ev charg\w*|charging stations?/, alt: ['elektromobil', 'wallbox', 'nabijack', 'nabijec', 'charger', 'charging'] },
+    { n: ['Sirény a alarmy', 'Sirény a alarmy', 'Sirens & alarms'], re: /siren\w*|alarm\w*|zabezpec\w*|security/, alt: ['siren', 'alarm', 'zabezpec', 'security', 'ajax'] },
+    { n: ['Osvetlenie', 'Osvětlení', 'Lighting'], re: /osvetlen\w*|svetl\w*|ziarov\w*|zarov\w*|\bbulbs?\b|\bled\b|lighting|\blights?\b|\blamps?\b/, alt: ['osvetl', 'svetl', 'ziarov', 'zarov', 'bulb', 'led', 'light', 'lamp'] },
+    { n: ['Riadiace jednotky a brány', 'Řídicí jednotky a brány', 'Hubs & gateways'], re: /\bhub\w*|centraln\w* jednot\w*|riadiac\w* jednot\w*|ridic\w* jednot\w*|gateways?|bridge|\bbran[aueyo]?\b|dongle|koordinator\w*|coordinators?/, alt: ['hub', 'gateway', 'bridge', 'bran', 'jednotk', 'controller', 'dongle', 'koordinator', 'coordinator'] }
   ];
+  var HUBLABEL = G[G.length - 1].n[LI];
   var ECO = [
     { re: /\bhomey\b/, k: 'homey', l: 'Homey' },
     { re: /\bfibaro\b|\bhc3\b|\bhc2\b/, k: 'fibaro', l: 'FIBARO' },
@@ -89,11 +152,13 @@
     { re: /bluetooth|\bble\b/, k: 'bluetooth', l: 'Bluetooth' }
   ];
   var PROTOS = [['zigbee', 'Zigbee'], ['zwave', 'Z-Wave'], ['wifi', 'Wi-Fi'], ['matter', 'Matter'], ['thread', 'Thread'], ['bluetooth', 'Bluetooth']];
-  var STOP = new Set('na do pre s so a cez v vo z zo k ku od pri po za ktory ktora ktore ktoru co chcem hladam potrebujem nejaky nejaka nejake nejaku mi moj moja moje ako je to sa by aj alebo ci the for with and of mobil mobilom mobilu telefon telefonom aplikaciu aplikacia appku app navod navody sprievodca tipy porovnanie rozdiel vybrat vyber aky aka ake recenzia'.split(' '));
-  var SOFT = /^(senzor|detekt|cidl|smart|inteligent|home$|domac|zariaden|modul|system|ovladani)/;
-  var INTENT = /\b(ako|navod\w*|sprievodc\w*|co je|aky|aka|ake|ktory|ktora|porovnan\w*|rozdiel\w*|zacat|zaciatok|tipy|recenzi\w*|vybrat|vyber)\b/;
-  var ACC = /^(drziak|kryt|bateri|napajac|adapter|kabel|ramik|montaz|nahradn|prislus|redukc|magnet|nalepk|podlozk|2x|3x|4x)/;
-  var POPULAR = ['senzor úniku vody', 'termostatická hlavica', 'zigbee brána', 'smart zámok', 'shelly', 'homey'];
+  var STOP = new Set(('na do pre s so a cez v vo z zo k ku od pri po za ktory ktora ktore ktoru co chcem hladam potrebujem nejaky nejaka nejake nejaku mi moj moja moje ako je to sa by aj alebo ci mobil mobilom mobilu telefon telefonom aplikaciu aplikacia appku app navod navody sprievodca tipy porovnanie rozdiel vybrat vyber aky aka ake recenzia ' +
+    'pro se ze ke ktery ktera ktere kterou chci hledam potrebuji muj jak nebo zda mobilem telefonem aplikace aplikaci pruvodce porovnani rozdil jaky jaka jake recenze ' +
+    'the for with and of an to in on or my me need want looking buy how what which is are works compatible phone guide guides tips review vs best').split(' '));
+  var SOFT = /^(senzor|sensor|detekt|cidl|smart|chytr|inteligent|home$|domac|zariaden|zarizen|device|modul|system|ovladani|ovladan|control$)/;
+  var INTENT = /\b(ako|jak|how|navod\w*|sprievodc\w*|pruvodc\w*|guides?|co je|what is|aky|aka|ake|jaky|jaka|which|ktory|ktora|ktery|porovnan\w*|compar\w*|rozdiel\w*|rozdil\w*|difference|zacat|zacit|zaciatok|zacatek|getting started|tipy|tips|recenz\w*|reviews?|vybrat|vyber|choose)\b/;
+  var ACC = /^(drziak|drzak|kryt|bateri|batter|napajac|napajec|adapter|kabel|cable|ramik|ramec|montaz|mount|holder|bracket|cover|nahradn|spare|replacement|prislus|accessor|redukc|magnet|nalepk|sticker|podlozk|2x|3x|4x)/;
+  var POPULAR = T.popularQ;
 
   /* ---------- index ---------- */
   function fromXML(doc) {
@@ -194,7 +259,7 @@
     var s = ' ' + spaced(raw) + ' ', terms = [], labels = [], fixes = [];
     var intent = INTENT.test(s);
     G.forEach(function (g) {
-      if (g.re.test(s)) { terms.push({ alts: g.alt, group: g.n }); labels.push(g.n); s = s.replace(new RegExp(g.re.source, 'g'), ' '); }
+      if (g.re.test(s)) { terms.push({ alts: g.alt, group: g.n[LI] }); labels.push(g.n[LI]); s = s.replace(new RegExp(g.re.source, 'g'), ' '); }
     });
     var ecos = [];
     ECO.forEach(function (e) { if (e.re.test(s)) { ecos.push(e); s = s.replace(new RegExp(e.re.source, 'g'), ' '); } });
@@ -229,10 +294,10 @@
   function boost(p, pq) {
     var a = norm(p.a), b = 0;
     if (p.ok) b += 3;
-    else if (/predaj skoncil/.test(a)) b -= 6;
+    else if (/predaj skoncil|prodej skoncil|sale ended|discontinued|no longer/.test(a)) b -= 6;
     else if (p.ext) b -= 1.5;
-    else if (/dodanie|objednavk/.test(a)) b += 1;
-    else if (/nedostup|vypredan/.test(a)) b -= 3;
+    else if (/dodani|objednavk|deliver|to order|on order|within/.test(a)) b += 1;
+    else if (/nedostup|vypredan|vyprodan|unavailable|sold out|out of stock/.test(a)) b -= 3;
     if (p.fl.indexOf('tip') >= 0) b += 1.5;
     if (p.o) b += 0.3;
     if (p.tn.slice(0, 2).some(function (x) { return ACC.test(x); }) &&
@@ -424,24 +489,24 @@
     }).join('');
   }
   function availHtml(p) {
-    if (p.ok) return '<span class="hss-ok">Skladom (' + (p.s > 50 ? '>50' : Math.round(p.s)) + ' ks)</span>';
-    if (p.ext) return '<span class="hss-warn">Centrálny sklad</span>';
+    if (p.ok) return '<span class="hss-ok">' + T.stock + ' (' + (p.s > 50 ? '>50' : Math.round(p.s)) + ' ' + T.pcs + ')</span>';
+    if (p.ext) return '<span class="hss-warn">' + T.central + '</span>';
     var a = norm(p.a);
-    if (/dodanie|objednavk/.test(a)) return '<span class="hss-warn">' + esc(p.a) + '</span>';
-    return '<span class="hss-no">' + esc(p.a || 'Nedostupné') + '</span>';
+    if (/dodani|objednavk|deliver|to order|on order|within/.test(a)) return '<span class="hss-warn">' + esc(p.a) + '</span>';
+    return '<span class="hss-no">' + esc(p.a || T.unavail) + '</span>';
   }
   function flagHtml(p) {
     var h = '';
-    if (p.fl.indexOf('tip') >= 0) h += '<span class="hss-flag hss-f-tip">Odporúčame</span>';
-    if (NEW.indexOf(p) >= 0) h += '<span class="hss-flag hss-f-new">Novinka</span>';
+    if (p.fl.indexOf('tip') >= 0) h += '<span class="hss-flag hss-f-tip">' + T.tip + '</span>';
+    if (NEW.indexOf(p) >= 0) h += '<span class="hss-flag hss-f-new">' + T.isNew + '</span>';
     if (p.un) {
       var d = Math.ceil((new Date(p.un + 'T23:59:59') - new Date()) / 864e5);
-      if (d <= 7) h += '<span class="hss-flag hss-f-sale">' + (d <= 1 ? 'Zľava končí dnes' : 'Zľava ešte ' + d + ' dni') + '</span>';
+      if (d <= 7) h += '<span class="hss-flag hss-f-sale">' + (d <= 1 ? T.saleToday : T.saleDays(d)) + '</span>';
     }
     return h;
   }
   function priceHtml(p) {
-    return '<strong>' + (p.f ? 'od ' : '') + money(p.p) + '</strong>' + (p.o ? '<div class="hss-old">' + money(p.o) + '</div>' : '');
+    return '<strong>' + (p.f ? T.from : '') + money(p.p) + '</strong>' + (p.o ? '<div class="hss-old">' + money(p.o) + '</div>' : '');
   }
   function canCart() { return !!(window.shoptet && shoptet.cartShared && typeof shoptet.cartShared.addToCart === 'function'); }
   function row(p, pq, i) {
@@ -449,37 +514,37 @@
     if (!p.ok && p.al.length) {
       for (var k = 0; k < p.al.length; k++) {
         var a = IX.byCode.get(p.al[k]);
-        if (a && a.ok) { alt = '<div class="hss-alt">Skladom je podobný: <a href="' + esc(a.u) + '">' + esc(a.n) + '</a> za ' + money(a.p) + '</div>'; break; }
+        if (a && a.ok) { alt = '<div class="hss-alt">' + T.similar + ' <a href="' + esc(a.u) + '">' + esc(a.n) + '</a> ' + T['for'] + ' ' + money(a.p) + '</div>'; break; }
       }
     }
     var tags = p.proto.slice(0, 3).map(function (x) { return '<span class="hss-tag">' + x + '</span>'; }).join('') +
-      (p.fl.indexOf('custom3') >= 0 ? '<span class="hss-tag">Funguje s Homey</span>' : '') +
-      (p.fl.indexOf('custom1') >= 0 ? '<span class="hss-tag">Funguje s FIBAROM</span>' : '');
+      (p.fl.indexOf('custom3') >= 0 ? '<span class="hss-tag">' + T.homey + '</span>' : '') +
+      (p.fl.indexOf('custom1') >= 0 ? '<span class="hss-tag">' + T.fibaro + '</span>' : '');
     return '<div class="hss-row" data-i="' + i + '" data-u="' + esc(p.u) + '">' + imgTag(p.i, 'hss-img') +
       '<div class="hss-body">' + (fl ? '<div>' + fl + '</div>' : '') +
       '<a class="hss-name" href="' + esc(p.u) + '">' + hl(p.n, pq) + '</a>' +
       '<div class="hss-meta">' + availHtml(p) + tags + '</div>' + alt + '</div>' +
-      '<div class="hss-price">' + priceHtml(p) + (p.ok && !p.f && canCart() ? '<div><button type="button" class="hss-cart" data-c="' + esc(p.c) + '">Do košíka</button></div>' : '') + '</div></div>';
+      '<div class="hss-price">' + priceHtml(p) + (p.ok && !p.f && canCart() ? '<div><button type="button" class="hss-cart" data-c="' + esc(p.c) + '">' + T.cart + '</button></div>' : '') + '</div></div>';
   }
   function karlikHtml() {
-    return '<div class="hss-karlik"><div><div class="hss-h" style="margin:0 0 4px">Vypínače a zásuvky Karlik</div><div class="hss-note" style="margin:0">Kompletný sortiment Karlik nájdete v samostatnej kategórii.</div></div><div class="hss-chips" style="margin:8px 0 0">' +
+    return '<div class="hss-karlik"><div><div class="hss-h" style="margin:0 0 4px">' + T.karTitle + '</div><div class="hss-note" style="margin:0">' + T.karText + '</div></div><div class="hss-chips" style="margin:8px 0 0">' +
       KARLIK.series.map(function (s) { return '<a class="hss-chip" href="' + esc(s[1]) + '">' + esc(s[0]) + '</a>'; }).join('') +
-      '<a class="hss-chip on" href="' + esc(KARLIK.all) + '">Celá ponuka Karlik →</a></div></div>';
+      '<a class="hss-chip on" href="' + esc(KARLIK.all) + '">' + T.karAll + '</a></div></div>';
   }
   function artHtml(a) { return '<a class="hss-art" href="' + esc(a.u) + '"><span>' + esc(a.t) + '</span>' + (a.d ? '<small>' + esc(a.d) + '</small>' : '') + '</a>'; }
 
   function emptyHtml() {
     var rec = recent(), h = '<div class="hss-wrap"><div class="hss-main">';
-    if (rec.length) h += '<div class="hss-h">Vaše posledné hľadania</div><div class="hss-chips">' + rec.map(function (x) { return '<button type="button" class="hss-chip" data-q="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>';
-    h += '<div class="hss-h">Ľudia často hľadajú</div><div class="hss-chips">' + POPULAR.map(function (x) { return '<button type="button" class="hss-chip" data-q="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>';
+    if (rec.length) h += '<div class="hss-h">' + T.recent + '</div><div class="hss-chips">' + rec.map(function (x) { return '<button type="button" class="hss-chip" data-q="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>';
+    h += '<div class="hss-h">' + T.popular + '</div><div class="hss-chips">' + POPULAR.map(function (x) { return '<button type="button" class="hss-chip" data-q="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>';
     var nw = NEW.filter(function (p) { return p.ok; }).slice(0, 4);
-    if (nw.length) h += '<div class="hss-h">Novinky v ponuke</div><div class="hss-grid">' + nw.map(function (p) {
+    if (nw.length) h += '<div class="hss-h">' + T.news + '</div><div class="hss-grid">' + nw.map(function (p) {
       return '<a class="hss-card" href="' + esc(p.u) + '">' + imgTag(p.i, '', 'detail_small') + '<div class="n">' + esc(p.n) + '</div><div class="pr">' + money(p.p) + '</div></a>';
     }).join('') + '</div>';
     h += '</div><div class="hss-side">';
     var sale = IX.P.filter(function (p) { return p.ok && p.un; }).sort(function (a, b) { return a.un < b.un ? -1 : 1; }).slice(0, 4);
     if (sale.length < 3) sale = IX.P.filter(function (p) { return p.ok && p.o; }).sort(function (a, b) { return (b.o - b.p) / b.o - (a.o - a.p) / a.o; }).slice(0, 4);
-    if (sale.length) h += '<div class="hss-h">Akcie, ktoré končia</div>' + sale.map(function (p) {
+    if (sale.length) h += '<div class="hss-h">' + T.sale + '</div>' + sale.map(function (p) {
       return '<a class="hss-mini" href="' + esc(p.u) + '">' + imgTag(p.i, '') + '<div><div class="n">' + esc(p.n) + '</div><div class="pr">' + money(p.p) + (p.o ? ' <span class="hss-old" style="display:inline">' + money(p.o) + '</span>' : '') + '</div></div></a>';
     }).join('');
     return h + '</div></div>';
@@ -492,38 +557,38 @@
     var shown = list.slice(0, st.all ? st.lim : C.drop);
     st.list = shown.map(function (x) { return x.p; });
     var arts = searchArticles(pq), main = '', side = '';
-    if (pq.fixes.length) main += '<div class="hss-note">Zobrazujem výsledky pre <strong>' + esc(pq.fixes.join(', ')) + '</strong></div>';
-    if (pq.labels.length) main += '<div class="hss-note">Hľadám: <strong>' + esc(pq.labels.join(', ')) + '</strong></div>';
-    if (pq.intent && arts.length) main += '<div class="hss-h">Návody a články</div>' + arts.slice(0, 3).map(artHtml).join('') + '<div class="hss-h">Produkty</div>';
+    if (pq.fixes.length) main += '<div class="hss-note">' + T.fixed + ' <strong>' + esc(pq.fixes.join(', ')) + '</strong></div>';
+    if (pq.labels.length) main += '<div class="hss-note">' + T.looking + ' <strong>' + esc(pq.labels.join(', ')) + '</strong></div>';
+    if (pq.intent && arts.length) main += '<div class="hss-h">' + T.guides + '</div>' + arts.slice(0, 3).map(artHtml).join('') + '<div class="hss-h">' + T.products + '</div>';
     var pc = {};
     r.res.forEach(function (x) { x.p.proto.forEach(function (k) { pc[k] = (pc[k] || 0) + 1; }); });
     var pk = Object.keys(pc).filter(function (k) { return pc[k] < r.res.length || st.f === k; });
     if (r.res.length > 3 && pk.length) main += '<div class="hss-chips">' + PROTOS.map(function (x) { return x[1]; }).filter(function (k) { return pk.indexOf(k) >= 0; }).map(function (k) {
       return '<button type="button" class="hss-chip' + (st.f === k ? ' on' : '') + '" data-f="' + k + '">' + k + ' <span style="opacity:.7">' + pc[k] + '</span></button>';
     }).join('') + '</div>';
-    if (shown.length && shown[0].partial) main += '<div class="hss-note">Presnú zhodu sme nenašli, toto sú najbližšie výsledky.</div>';
-    var kq = spaced(q), kStrong = /\b(karlik\w*|deco|icon|ramik\w*|ramcek\w*|ramc\w*)\b/.test(kq), kWeak = /\b(vypinac\w*|zasuvk\w*|dvojzasuvk\w*|zasuvka)\b/.test(kq);
-    if (!shown.length && !(KARLIK && kStrong)) main += '<div class="hss-empty">Pre „' + esc(q) + '“ sme nenašli žiadny produkt. Skúste iné slovo alebo <a href="' + esc(CONTACT) + '">nám napíšte</a>, radi poradíme.</div>';
+    if (shown.length && shown[0].partial) main += '<div class="hss-note">' + T.partial + '</div>';
+    var kq = spaced(q), kStrong = /\b(karlik\w*|deco|icon|ramik\w*|ramcek\w*|ramc\w*|ramec\w*|frames?)\b/.test(kq), kWeak = /\b(vypinac\w*|zasuvk\w*|dvojzasuvk\w*|switch\w*|sockets?)\b/.test(kq);
+    if (!shown.length && !(KARLIK && kStrong)) main += '<div class="hss-empty">' + T.none1 + esc(q) + T.none2 + '<a href="' + esc(CONTACT) + '">' + T.none3 + '</a>' + T.none4 + '</div>';
     if (KARLIK && kStrong) main += karlikHtml();
     main += shown.map(function (x, i) { return row(x.p, pq, i); }).join('');
     if (KARLIK && kWeak && !kStrong) main += karlikHtml();
     var top = shown.slice(0, 8).map(function (x) { return x.p; });
-    var isHub = pq.labels.indexOf('Riadiace jednotky a brány') >= 0;
+    var isHub = pq.labels.indexOf(HUBLABEL) >= 0;
     var zb = top.filter(function (p) { return p.proto.indexOf('Zigbee') >= 0 && p.proto.indexOf('Wi-Fi') < 0; }).length;
     var zw = top.filter(function (p) { return p.proto.indexOf('Z-Wave') >= 0; }).length;
     if (!isHub && top.length && (zb >= 2 || zw >= 2)) {
-      var zig = zb >= zw, cl = catLink(zig ? 'Riadiace jednotky ZigBee' : 'Riadiace jednotky Z-Wave');
-      var lk = cl ? '<a href="' + esc(cl) + '">' : '<a href="#" data-q="' + (zig ? 'zigbee brána' : 'zwave centrálna jednotka') + '">';
-      main += '<div class="hss-hint"><span>' + (zig ? 'Zigbee zariadenia potrebujú na fungovanie bránu (hub).' : 'Z-Wave zariadenia sa pripájajú cez centrálnu jednotku, napríklad Homey alebo FIBARO Home Center.') +
-        ' Ak ju ešte nemáte, ' + lk + 'pozrite si riadiace jednotky</a>.</span></div>';
+      var zig = zb >= zw, cl = (HUB && HUB[zig ? 'zigbee' : 'zwave']) || catLink(zig ? 'Riadiace jednotky ZigBee' : 'Riadiace jednotky Z-Wave');
+      var lk = cl ? '<a href="' + esc(cl) + '">' : '<a href="#" data-q="' + (zig ? T.zigQ : T.zwQ) + '">';
+      main += '<div class="hss-hint"><span>' + (zig ? T.zigHint : T.zwHint) +
+        T.ifNot + lk + T.seeHubs + '</a>.</span></div>';
     }
-    if (list.length > shown.length) main += '<button type="button" class="hss-more" data-more="1">Zobraziť všetkých ' + list.length + ' ' + plural(list.length) + '</button>';
+    if (list.length > shown.length) main += '<button type="button" class="hss-more" data-more="1">' + T.showAll(list.length) + '</button>';
     if (C.debug) main += '<div class="hss-foot">Nové vyhľadávanie · <a href="/vyhladavanie/?string=' + encodeURIComponent(q) + '">porovnať s pôvodným vyhľadávaním</a></div>';
     var cc = {}, cn = {};
     r.res.forEach(function (x) {
       Array.from(new Set(x.p.cat.concat(x.p.dc).map(function (c) { return c.split('>').pop().trim(); }))).forEach(function (c) {
         var last = c.split('>').pop().trim();
-        if (/kompatibiln|^ostatn|black friday|dopredaj|^seo|works with|odbalen|zvyhodnen/i.test(last) && !(/homey/i.test(last) && pq.labels.indexOf('Homey') >= 0)) return;
+        if (CATX.test(norm(last)) && !(/homey/i.test(last) && pq.labels.indexOf('Homey') >= 0)) return;
         if (!catLink(last)) return;
         var gm = pq.terms.some(function (t) { return t.group && t.alts.some(function (al) { return toks(last).some(function (x) { return mt(x, al); }); }); });
         cc[last] = (cc[last] || 0) + (gm ? 6 : 1); cn[last] = (cn[last] || 0) + 1;
@@ -532,22 +597,22 @@
     var cats = Object.keys(cc).sort(function (a, b) { return cc[b] - cc[a]; });
     if (cats.length && cc[cats[0]] >= 6) cats = cats.filter(function (c) { return cc[c] >= 6; });
     cats = cats.slice(0, 4);
-    if (cats.length) side += '<div class="hss-h">Kategórie</div>' + cats.map(function (c) { return '<a class="hss-cat" href="' + esc(catLink(c)) + '"><span>' + esc(c) + '</span><b>' + cn[c] + '</b></a>'; }).join('');
-    if (!pq.intent && arts.length) side += '<div class="hss-blogbox"><div class="hss-h">Z blogu</div>' + arts.slice(0, 2).map(artHtml).join('') + '<a class="hss-blogall" href="/blog/">Všetky články</a></div>';
+    if (cats.length) side += '<div class="hss-h">' + T.cats + '</div>' + cats.map(function (c) { return '<a class="hss-cat" href="' + esc(catLink(c)) + '"><span>' + esc(c) + '</span><b>' + cn[c] + '</b></a>'; }).join('');
+    if (!pq.intent && arts.length) side += '<div class="hss-blogbox"><div class="hss-h">' + T.blog + '</div>' + arts.slice(0, 2).map(artHtml).join('') + '<a class="hss-blogall" href="' + T.blogUrl + '">' + T.allArts + '</a></div>';
     track(q, r.res.length);
     return side ? '<div class="hss-wrap"><div class="hss-main">' + main + '</div><div class="hss-side">' + side + '</div></div>' : '<div class="hss-main">' + main + '</div>';
   }
 
   /* ---------- stránka s výsledkami (/vyhladavanie/?string=...) ---------- */
   var PG = { q: '', f: null, stock: false, sort: 'rel', lim: 24, root: null };
-  function plural(n) { return n === 1 ? 'produkt' : (n >= 2 && n <= 4) ? 'produkty' : 'produktov'; }
-  function isSearchPage() { return /^\/vyhladavanie\/?$/.test(location.pathname); }
+  function plural(n) { return T.plural(n); }
+  function isSearchPage() { return location.pathname.replace(/\/?$/, '/') === LANGS[L].search; }
   function pageQuery() { try { return (new URLSearchParams(location.search).get('string') || '').trim(); } catch (e) { return ''; } }
   function goSearch(q) {
     q = (q || '').trim();
     if (spaced(q).length < 2) { if (input) input.focus(); return; }
     remember(q); hide();
-    var url = '/vyhladavanie/?string=' + encodeURIComponent(q);
+    var url = LANGS[L].search + '?string=' + encodeURIComponent(q);
     if (isSearchPage() && PG.root) {
       history.pushState(null, '', url);
       PG.q = q; PG.f = null; PG.lim = 24;
@@ -559,7 +624,7 @@
     var cc = {}, cn = {};
     res.forEach(function (p) {
       Array.from(new Set(p.cat.concat(p.dc).map(function (c) { return c.split('>').pop().trim(); }))).forEach(function (last) {
-        if (!last || /kompatibiln|^ostatn|black friday|dopredaj|^seo|works with|odbalen|zvyhodnen/i.test(last)) return;
+        if (!last || CATX.test(norm(last))) return;
         if (!catLink(last)) return;
         var gm = pq.terms.some(function (t) { return t.group && t.alts.some(function (al) { return toks(last).some(function (x) { return mt(x, al); }); }); });
         cc[last] = (cc[last] || 0) + (gm ? 6 : 1); cn[last] = (cn[last] || 0) + 1;
@@ -571,22 +636,22 @@
   }
   function card(p, pq) {
     var alt = '';
-    if (!p.ok && p.al.length) for (var k = 0; k < p.al.length; k++) { var a = IX.byCode.get(p.al[k]); if (a && a.ok) { alt = '<div class="hss-alt">Skladom je podobný: <a href="' + esc(a.u) + '">' + esc(a.n) + '</a></div>'; break; } }
+    if (!p.ok && p.al.length) for (var k = 0; k < p.al.length; k++) { var a = IX.byCode.get(p.al[k]); if (a && a.ok) { alt = '<div class="hss-alt">' + T.similar + ' <a href="' + esc(a.u) + '">' + esc(a.n) + '</a></div>'; break; } }
     var tags = p.proto.slice(0, 2).map(function (x) { return '<span class="hss-tag">' + x + '</span>'; }).join('') +
-      (p.fl.indexOf('custom3') >= 0 ? '<span class="hss-tag">Funguje s Homey</span>' : '') + (p.fl.indexOf('custom1') >= 0 ? '<span class="hss-tag">Funguje s FIBAROM</span>' : '');
+      (p.fl.indexOf('custom3') >= 0 ? '<span class="hss-tag">' + T.homey + '</span>' : '') + (p.fl.indexOf('custom1') >= 0 ? '<span class="hss-tag">' + T.fibaro + '</span>' : '');
     return '<div class="hsp-card" data-u="' + esc(p.u) + '"><div class="hsp-flags">' + flagHtml(p) + '</div>' +
       '<a href="' + esc(p.u) + '" tabindex="-1">' + imgTag(p.i, 'hsp-img', 'detail_small') + '</a>' +
       '<a class="hsp-name" href="' + esc(p.u) + '">' + hl(p.n, pq) + '</a>' +
       '<div class="hss-meta">' + availHtml(p) + tags + '</div>' + alt +
       '<div class="hsp-bot"><div class="hss-price">' + priceHtml(p) + '</div>' +
-      (p.ok && !p.f && canCart() ? '<button type="button" class="hss-cart" data-c="' + esc(p.c) + '">Do košíka</button>' : '<a class="hsp-detail" href="' + esc(p.u) + '">Detail</a>') + '</div></div>';
+      (p.ok && !p.f && canCart() ? '<button type="button" class="hss-cart" data-c="' + esc(p.c) + '">' + T.cart + '</button>' : '<a class="hsp-detail" href="' + esc(p.u) + '">' + T.detail + '</a>') + '</div></div>';
   }
   function renderPage() {
     if (!PG.root || !IX) return;
     var q = PG.q, h = '';
     document.querySelectorAll('input[name="string"]').forEach(function (i) { if (document.activeElement !== i) i.value = q; });
     if (spaced(q).length < 2) {
-      PG.root.innerHTML = '<h1 class="hsp-title">Vyhľadávanie</h1><div class="hsp-sub">Napíšte, čo hľadáte, alebo skúste niečo z obľúbených hľadaní:</div><div class="hss-chips">' +
+      PG.root.innerHTML = '<h1 class="hsp-title">' + T.search + '</h1><div class="hsp-sub">' + T.searchHint + '</div><div class="hss-chips">' +
         POPULAR.map(function (x) { return '<button type="button" class="hss-chip" data-q="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>';
       return;
     }
@@ -595,38 +660,38 @@
     if (PG.sort === 'asc') list = list.slice().sort(function (a, b) { return a.p - b.p; });
     if (PG.sort === 'desc') list = list.slice().sort(function (a, b) { return b.p - a.p; });
     var arts = searchArticles(pq), cats = catsFor(all.slice(0, 60), pq);
-    var kq = spaced(q), kStrong = /\b(karlik\w*|deco|icon|ramik\w*|ramcek\w*|ramc\w*)\b/.test(kq), kWeak = /\b(vypinac\w*|zasuvk\w*|dvojzasuvk\w*|zasuvka)\b/.test(kq);
-    h += '<h1 class="hsp-title">Výsledky pre „' + esc(q) + '“</h1><div class="hsp-sub">' + all.length + ' ' + plural(all.length) +
-      (pq.fixes.length ? ' · zobrazujem výsledky pre <strong>' + esc(pq.fixes.join(', ')) + '</strong>' : '') +
-      (pq.labels.length ? ' · hľadám: <strong>' + esc(pq.labels.join(', ')) + '</strong>' : '') + '</div>';
+    var kq = spaced(q), kStrong = /\b(karlik\w*|deco|icon|ramik\w*|ramcek\w*|ramc\w*|ramec\w*|frames?)\b/.test(kq), kWeak = /\b(vypinac\w*|zasuvk\w*|dvojzasuvk\w*|switch\w*|sockets?)\b/.test(kq);
+    h += '<h1 class="hsp-title">' + T.resFor + ' ' + T.q1 + esc(q) + T.q2 + '</h1><div class="hsp-sub">' + all.length + ' ' + plural(all.length) +
+      (pq.fixes.length ? ' · ' + T.fixedLow + ' <strong>' + esc(pq.fixes.join(', ')) + '</strong>' : '') +
+      (pq.labels.length ? ' · ' + T.lookingLow + ' <strong>' + esc(pq.labels.join(', ')) + '</strong>' : '') + '</div>';
     if (KARLIK && kStrong) h += karlikHtml();
     if (cats.length) h += '<div class="hsp-cats">' + cats.map(function (c) { return '<a class="hsp-cat" href="' + esc(catLink(c[0])) + '">' + esc(c[0]) + ' <b>' + c[1] + '</b></a>'; }).join('') + '</div>';
-    if (pq.intent && arts.length) h += '<div class="hss-h">Návody a články</div><div class="hsp-arts">' + arts.slice(0, 3).map(function (a) { return '<a class="hsp-art" href="' + esc(a.u) + '"><span>' + esc(a.t) + '</span>' + (a.d ? '<small>' + esc(a.d) + '</small>' : '') + '</a>'; }).join('') + '</div>';
+    if (pq.intent && arts.length) h += '<div class="hss-h">' + T.guides + '</div><div class="hsp-arts">' + arts.slice(0, 3).map(function (a) { return '<a class="hsp-art" href="' + esc(a.u) + '"><span>' + esc(a.t) + '</span>' + (a.d ? '<small>' + esc(a.d) + '</small>' : '') + '</a>'; }).join('') + '</div>';
     if (all.length) {
       var pc = {}; all.forEach(function (p) { p.proto.forEach(function (k) { pc[k] = (pc[k] || 0) + 1; }); });
       var pk = PROTOS.map(function (x) { return x[1]; }).filter(function (k) { return pc[k] && (pc[k] < all.length || PG.f === k); });
       h += '<div class="hsp-bar"><div class="hss-chips" style="margin:0">' +
-        '<button type="button" class="hss-chip' + (PG.stock ? ' on' : '') + '" data-stock="1">Len skladom</button>' +
+        '<button type="button" class="hss-chip' + (PG.stock ? ' on' : '') + '" data-stock="1">' + T.onlyStock + '</button>' +
         pk.map(function (k) { return '<button type="button" class="hss-chip' + (PG.f === k ? ' on' : '') + '" data-pf="' + k + '">' + k + ' <span style="opacity:.7">' + pc[k] + '</span></button>'; }).join('') +
-        '</div><select class="hsp-sort" aria-label="Zoradiť"><option value="rel"' + (PG.sort === 'rel' ? ' selected' : '') + '>Najrelevantnejšie</option><option value="asc"' + (PG.sort === 'asc' ? ' selected' : '') + '>Najlacnejšie</option><option value="desc"' + (PG.sort === 'desc' ? ' selected' : '') + '>Najdrahšie</option></select></div>';
+        '</div><select class="hsp-sort" aria-label="' + T.sort + '"><option value="rel"' + (PG.sort === 'rel' ? ' selected' : '') + '>' + T.rel + '</option><option value="asc"' + (PG.sort === 'asc' ? ' selected' : '') + '>' + T.asc + '</option><option value="desc"' + (PG.sort === 'desc' ? ' selected' : '') + '>' + T.desc + '</option></select></div>';
     }
-    if (partial) h += '<div class="hss-note">Presnú zhodu sme nenašli, toto sú najbližšie výsledky.</div>';
-    if (!all.length && !(KARLIK && kStrong)) h += '<div class="hss-empty">Pre „' + esc(q) + '“ sme nenašli žiadny produkt. Skúste iné slovo alebo <a href="' + esc(CONTACT) + '">nám napíšte</a>, radi poradíme.</div><div class="hss-chips">' +
+    if (partial) h += '<div class="hss-note">' + T.partial + '</div>';
+    if (!all.length && !(KARLIK && kStrong)) h += '<div class="hss-empty">' + T.none1 + esc(q) + T.none2 + '<a href="' + esc(CONTACT) + '">' + T.none3 + '</a>' + T.none4 + '</div><div class="hss-chips">' +
       POPULAR.map(function (x) { return '<button type="button" class="hss-chip" data-q="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>';
-    if (all.length && !list.length) h += '<div class="hss-empty">S týmito filtrami nič nemáme, skúste niektorý vypnúť.</div>';
+    if (all.length && !list.length) h += '<div class="hss-empty">' + T.noFilter + '</div>';
     h += '<div class="hsp-grid">' + list.slice(0, PG.lim).map(function (p) { return card(p, pq); }).join('') + '</div>';
-    if (list.length > PG.lim) h += '<button type="button" class="hss-more" data-pmore="1">Zobraziť ďalšie (' + (list.length - PG.lim) + ')</button>';
+    if (list.length > PG.lim) h += '<button type="button" class="hss-more" data-pmore="1">' + T.more + ' (' + (list.length - PG.lim) + ')</button>';
     var zb = list.slice(0, 12).filter(function (p) { return p.proto.indexOf('Zigbee') >= 0 && p.proto.indexOf('Wi-Fi') < 0; }).length;
     var zw = list.slice(0, 12).filter(function (p) { return p.proto.indexOf('Z-Wave') >= 0; }).length;
-    if (pq.labels.indexOf('Riadiace jednotky a brány') < 0 && (zb >= 2 || zw >= 2)) {
-      var zig = zb >= zw, cl = catLink(zig ? 'Riadiace jednotky ZigBee' : 'Riadiace jednotky Z-Wave');
-      h += '<div class="hss-hint"><span>' + (zig ? 'Zigbee zariadenia potrebujú na fungovanie bránu (hub).' : 'Z-Wave zariadenia sa pripájajú cez centrálnu jednotku, napríklad Homey alebo FIBARO Home Center.') +
-        ' Ak ju ešte nemáte, ' + (cl ? '<a href="' + esc(cl) + '">' : '<a href="#" data-q="' + (zig ? 'zigbee brána' : 'zwave centrálna jednotka') + '">') + 'pozrite si riadiace jednotky</a>.</span></div>';
+    if (pq.labels.indexOf(HUBLABEL) < 0 && (zb >= 2 || zw >= 2)) {
+      var zig = zb >= zw, cl = (HUB && HUB[zig ? 'zigbee' : 'zwave']) || catLink(zig ? 'Riadiace jednotky ZigBee' : 'Riadiace jednotky Z-Wave');
+      h += '<div class="hss-hint"><span>' + (zig ? T.zigHint : T.zwHint) +
+        T.ifNot + (cl ? '<a href="' + esc(cl) + '">' : '<a href="#" data-q="' + (zig ? T.zigQ : T.zwQ) + '">') + T.seeHubs + '</a>.</span></div>';
     }
     if (KARLIK && kWeak && !kStrong) h += karlikHtml();
-    if (!pq.intent && arts.length) h += '<div class="hss-h" style="margin-top:28px">Z blogu</div><div class="hsp-arts">' + arts.slice(0, 3).map(function (a) { return '<a class="hsp-art" href="' + esc(a.u) + '"><span>' + esc(a.t) + '</span>' + (a.d ? '<small>' + esc(a.d) + '</small>' : '') + '</a>'; }).join('') + '</div>';
+    if (!pq.intent && arts.length) h += '<div class="hss-h" style="margin-top:28px">' + T.blog + '</div><div class="hsp-arts">' + arts.slice(0, 3).map(function (a) { return '<a class="hsp-art" href="' + esc(a.u) + '"><span>' + esc(a.t) + '</span>' + (a.d ? '<small>' + esc(a.d) + '</small>' : '') + '</a>'; }).join('') + '</div>';
     PG.root.innerHTML = h;
-    document.title = 'Výsledky pre „' + q + '“ | HomeSystem.sk';
+    document.title = T.resFor + ' ' + T.q1 + q + T.q2 + ' | HomeSystem';
     track(q, all.length);
   }
   function onPageClick(ev) {
@@ -637,7 +702,7 @@
     if (pm) { PG.lim += 24; renderPage(); return; }
     if (cart) {
       ev.preventDefault();
-      try { shoptet.cartShared.addToCart({ productCode: cart.getAttribute('data-c') }); cart.textContent = 'Pridané'; }
+      try { shoptet.cartShared.addToCart({ productCode: cart.getAttribute('data-c') }); cart.textContent = T.added; }
       catch (e) { var p = IX.byCode.get(cart.getAttribute('data-c')); if (p) location.href = p.u; }
       return;
     }
@@ -649,7 +714,7 @@
     if (!main) return;
     PG.q = pageQuery();
     PG.root = document.createElement('div'); PG.root.className = 'hsp';
-    PG.root.innerHTML = '<div class="hsp-load">Hľadám…</div>';
+    PG.root.innerHTML = '<div class="hsp-load">' + T.searching + '</div>';
     main.insertBefore(PG.root, main.firstChild);
     document.body.classList.add('hsp-on');
     PG.root.addEventListener('click', onPageClick);
@@ -661,10 +726,10 @@
   }
 
   /* ---------- recent searches, tracking ---------- */
-  function recent() { try { return JSON.parse(localStorage.getItem('hss_recent') || '[]'); } catch (e) { return []; } }
+  function recent() { try { return JSON.parse(localStorage.getItem(RKEY) || '[]'); } catch (e) { return []; } }
   function remember(q) {
     q = (q || '').trim(); if (q.length < 2) return;
-    try { var r = recent().filter(function (x) { return x !== q; }); r.unshift(q); localStorage.setItem('hss_recent', JSON.stringify(r.slice(0, 5))); } catch (e) {}
+    try { var r = recent().filter(function (x) { return x !== q; }); r.unshift(q); localStorage.setItem(RKEY, JSON.stringify(r.slice(0, 5))); } catch (e) {}
   }
   var tTimer = null;
   function track(q, n) {
@@ -672,13 +737,13 @@
     clearTimeout(tTimer);
     tTimer = setTimeout(function () {
       if (typeof window.gtag !== 'function') return;
-      gtag('event', 'search', { search_term: q, results_count: n });
-      if (!n) gtag('event', 'search_no_results', { search_term: q });
+      gtag('event', 'search', { search_term: q, results_count: n, language: L });
+      if (!n) gtag('event', 'search_no_results', { search_term: q, language: L });
     }, 1500);
   }
 
   /* ---------- panel + input wiring ---------- */
-  var panel, input, ov, open = false;
+  var panel, input, ov, open = false, FAIL = false, styleEl = null;
   function place() {
     var r = input.getBoundingClientRect(), vw = window.innerWidth, w = Math.min(860, vw - 16);
     var left = Math.min(Math.max(8, r.left), vw - w - 8);
@@ -695,12 +760,12 @@
   function render() {
     if (!open) return;
     place();
-    if (!IX) { panel.innerHTML = '<div class="hss-main"><div class="hss-empty">Načítavam produkty…</div></div>'; return; }
+    if (!IX) { panel.innerHTML = '<div class="hss-main"><div class="hss-empty">' + T.loading + '</div></div>'; return; }
     st.act = -1;
     panel.innerHTML = spaced(input.value).length < 2 ? emptyHtml() : results();
   }
   function follow() { if (!open) return; place(); requestAnimationFrame(follow); }
-  function show() { var was = open; open = true; panel.classList.add('open'); ov.classList.add('on'); render(); if (!was) requestAnimationFrame(follow); }
+  function show() { if (FAIL) return; var was = open; open = true; panel.classList.add('open'); ov.classList.add('on'); render(); if (!was) requestAnimationFrame(follow); }
   function hide() { open = false; panel.classList.remove('open'); ov.classList.remove('on'); }
   function go(u) { remember(input.value); location.href = u; }
   function setAct(d) {
@@ -716,7 +781,7 @@
     if (more) { goSearch(input.value); return; }
     if (cart) {
       ev.preventDefault();
-      try { shoptet.cartShared.addToCart({ productCode: cart.getAttribute('data-c') }); cart.textContent = 'Pridané'; }
+      try { shoptet.cartShared.addToCart({ productCode: cart.getAttribute('data-c') }); cart.textContent = T.added; }
       catch (e) { var p = IX.byCode.get(cart.getAttribute('data-c')); if (p) go(p.u); }
       return;
     }
@@ -737,19 +802,21 @@
       else if (e.key === 'ArrowUp') { e.preventDefault(); setAct(-1); }
       else if (e.key === 'Escape') { hide(); inp.blur(); }
       else if (e.key === 'Enter') {
+        if (FAIL) return;
         e.preventDefault(); e.stopPropagation();
         if (st.act >= 0 && st.list[st.act]) go(st.list[st.act].u);
         else { input = inp; goSearch(inp.value); }
       }
     });
     if (inp.form) inp.form.addEventListener('submit', function (e) {
+      if (FAIL) return;
       e.preventDefault(); e.stopImmediatePropagation();
       input = inp;
       goSearch(inp.value);
     }, true);
   }
   function init() {
-    var s = document.createElement('style'); s.textContent = css; document.head.appendChild(s);
+    var s = document.createElement('style'); s.textContent = css; document.head.appendChild(s); styleEl = s;
     panel = document.createElement('div'); panel.id = 'hss'; document.body.appendChild(panel);
     ov = document.createElement('div'); ov.id = 'hss-ov'; ov.innerHTML = '<i class="hss-ovp"></i><i class="hss-ovp"></i><i class="hss-ovp"></i><i class="hss-ovp"></i>'; document.body.appendChild(ov);
     panel.addEventListener('click', onClick);
@@ -776,11 +843,15 @@
           IX = prep(j.p);
           ART = prepArt(j.a || []);
           NEW = (j.n || []).map(function (c) { return IX.byCode.get(c); }).filter(Boolean);
-          CATMAP = j.c || {}; KARLIK = j.k || null; if (j.ct) CONTACT = j.ct;
+          CATMAP = j.c || {}; KARLIK = j.k || null; HUB = j.h || null; if (j.ct) CONTACT = j.ct;
           render();
         });
       }
-      loading.then(function () { window.HSS = { search: search, parse: parse, IX: IX, version: C.indexUrl }; }).catch(function (e) { loading = null; console.warn('HSS', e); });
+      loading.then(function () { window.HSS = { search: search, parse: parse, IX: IX, version: C.indexUrl, lang: L }; }).catch(function (e) {
+        /* index sa nenačítal: vrátime pôvodné vyhľadávanie Shoptetu */
+        console.warn('HSS', e); FAIL = true; hide();
+        if (styleEl) styleEl.textContent = styleEl.textContent.replace('.search-whisperer{display:none!important}', '');
+      });
       return loading;
     };
     document.querySelectorAll('input[name="string"]').forEach(function (i) {
