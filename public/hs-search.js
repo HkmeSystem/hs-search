@@ -764,7 +764,12 @@
     st.act = -1;
     panel.innerHTML = spaced(input.value).length < 2 ? emptyHtml() : results();
   }
-  function follow() { if (!open) return; place(); requestAnimationFrame(follow); }
+  function follow() {
+    if (!open) return;
+    var rr = input ? input.getBoundingClientRect() : null;
+    if (!rr || !rr.width || !rr.height) { hide(); return; }
+    place(); requestAnimationFrame(follow);
+  }
   function show() { if (FAIL) return; var was = open; open = true; panel.classList.add('open'); ov.classList.add('on'); render(); if (!was) requestAnimationFrame(follow); }
   function hide() { open = false; panel.classList.remove('open'); ov.classList.remove('on'); }
   function go(u) { remember(input.value); location.href = u; }
@@ -781,7 +786,12 @@
     if (more) { goSearch(input.value); return; }
     if (cart) {
       ev.preventDefault();
-      try { shoptet.cartShared.addToCart({ productCode: cart.getAttribute('data-c') }); cart.textContent = T.added; }
+      try {
+        shoptet.cartShared.addToCart({ productCode: cart.getAttribute('data-c') });
+        cart.textContent = T.added;
+        /* zavrieť okno, aby bolo vidno potvrdenie Shoptetu (a na mobile sa nezasekla obrazovka) */
+        hide(); if (input) input.blur();
+      }
       catch (e) { var p = IX.byCode.get(cart.getAttribute('data-c')); if (p) go(p.u); }
       return;
     }
