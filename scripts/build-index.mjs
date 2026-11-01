@@ -71,7 +71,7 @@ export function productsFromXml(xml, today = new Date().toISOString().slice(0, 1
     if (act && act < price && (!af || af <= today) && (!au || au >= today)) { old = price; price = act; until = au; }
     else if (std > price) old = std;
     const flags = kids(kid(e, 'FLAGS'), 'FLAG').filter((f) => at(f, 'ACTIVE') === '1').map((f) => at(f, 'CODE'));
-    const clean = (t) => t.replace(/^Smarthome – inteligentná domácnosť\s*>+\s*/, '').replace(/\s*>>\s*/g, ' > ').trim();
+    const clean = (t) => { const seg = t.replace(/>>/g, '>').split('>').map((x) => x.trim()).filter(Boolean); if (seg.length > 1) seg.shift(); return seg.join(' > '); };
     const C = kid(e, 'CATEGORIES');
     const cats = kids(C, 'CATEGORY').map((c) => clean(txt(c)));
     const dc = clean(at(C, 'DEFAULT_CATEGORY'));
@@ -103,10 +103,11 @@ export function productsFromXml(xml, today = new Date().toISOString().slice(0, 1
 }
 
 /* ---------- pomocné stiahnutie ---------- */
-async function get(url, tries = 3) {
+const UA = 'HomeSystem-search-index/1.1';
+async function get(url, tries = 3, headers = {}) {
   for (let t = 1; ; t++) {
     try {
-      const r = await fetch(url, { headers: { 'User-Agent': 'HomeSystem-search-index/1.0' } });
+      const r = await fetch(url, { headers: Object.assign({ 'User-Agent': UA }, headers) });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return await r.text();
     } catch (err) {
@@ -120,53 +121,89 @@ const slug = (s) => '/' + (s || '').toLowerCase().normalize('NFD').replace(/[\u0
 const slugRaw = (s) => '/' + (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '-') + '/';
 const stripTags = (h) => decode(h.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
 
-async function main() {
-  if (!EXPORT_URL) throw new Error('Chýba tajomstvo EXPORT_URL.');
-  const t0 = Date.now();
-  const xml = await get(EXPORT_URL);
-  const { products, extCount } = productsFromXml(xml);
-  if (products.length < 100) throw new Error('Podozrivo málo produktov (' + products.length + '), index neprepisujem.');
-  console.log('Produkty:', products.length, '| Karlik (vynechané):', extCount, '|', Date.now() - t0, 'ms');
+// Shoptet posiela export v jazyku, ktorý má nastavená relácia -> pre každý jazyk vlastná relácia s cookies.
+async function langSession(lang) {
+  const jar = new Map();
+  const take = (r) => {
+    const list = typeof r.headers.getSetCookie === 'function' ? r.headers.getSetCookie() : [];
+    for (const c of list) { const kv = c.split(';')[0]; const i = kv.indexOf('='); if (i > 0) jar.set(kv.slice(0, i).trim(), kv.slice(i + 1)); }
+  };
+  const cookie = () => [...jar].map(([k, v]) => k + '=' + v).join('; ');
+  let r = await fetch(SHOP + '/', { redirect: 'manual', headers: { 'User-Agent': UA } }); take(r);
+  r = await fetch(SHOP + '/action/Language/changeLanguage/?language=' + lang, { redirect: 'manual', headers: { 'User-Agent': UA, Cookie: cookie() } }); take(r);
+  return { Cookie: cookie() };
+}
 
-  const [sitemap, home] = await Promise.all([get(SHOP + '/sitemap.xml').catch(() => ''), get(SHOP + '/').catch(() => '')]);
-  const smap = new Set([...sitemap.matchAll(/<loc>https?:\/\/[^/<]+(\/[^<]*)<\/loc>/g)].map((m) => m[1]));
+const LANGS = [
+  { code: 'sk', prefix: '', file: 'index.json', news: /Novinky v ponuke/ },
+  { code: 'cs', prefix: '/cs', file: 'index-cs.json', news: /Novinky v nabídce/ },
+  { code: 'en', prefix: '/en', file: 'index-en.json', news: /New Arrivals/i }
+];
 
-  // odkazy z menu a hlavnej stránky
+function menuMap(home) {
   const menu = new Map();
   for (const m of home.matchAll(/<a\s[^>]*href="([^"#]*)"[^>]*>([\s\S]*?)<\/a>/g)) {
     let h = m[1]; const t = spaced(stripTags(m[2]));
     if (!t || t.length > 80) continue;
     if (/^https?:\/\//.test(h)) { if (!h.startsWith(SHOP)) continue; h = h.slice(SHOP.length) || '/'; }
-    if (!h.startsWith('/')) continue;
+    if (!h.startsWith('/') || h.startsWith('/action/')) continue;
     if (!menu.has(t)) menu.set(t, h);
   }
-  // kategórie -> odkaz
+  return menu;
+}
+const lastSeg = (c) => c.split('>').pop().trim();
+
+async function buildLang(L, sitemap, smap, base) {
+  const t0 = Date.now();
+  const headers = await langSession(L.code);
+  const xml = await get(EXPORT_URL, 3, headers);
+  const { products } = productsFromXml(xml);
+  if (products.length < 100) throw new Error(L.code + ': podozrivo málo produktov (' + products.length + ')');
+  const wrong = products.filter((p) => L.prefix ? !p.u.startsWith(L.prefix + '/') : /^\/(cs|en)\//.test(p.u)).length;
+  if (wrong > products.length * 0.1) throw new Error(L.code + ': export neprišiel v správnom jazyku (' + wrong + ' adries nesedí)');
+  const home = await get(SHOP + (L.prefix || '') + '/', 2, headers).catch(() => '');
+  const menu = menuMap(home);
+
+  // kategórie -> odkaz (menu jazyka, sitemap, alebo SK odkaz s predponou jazyka)
   const catLinks = {};
-  const names = new Set();
-  for (const p of products) for (const c of p.cat.concat(p.dc)) names.add(c.split('>').pop().trim());
-  for (const n of names) {
-    const l = menu.get(spaced(n)) || (smap.has(slugRaw(n)) ? slugRaw(n) : smap.has(slug(n)) ? slug(n) : null);
+  const skByCode = base ? new Map(base.products.map((p) => [p.c, p])) : null;
+  const viaSk = new Map();
+  if (base) {
+    for (const p of products) {
+      const sk = skByCode.get(p.c); if (!sk) continue;
+      const a = p.cat.concat(p.dc), b = sk.cat.concat(sk.dc);
+      if (a.length !== b.length) continue;
+      a.forEach((c, i) => { const n = lastSeg(c), l = base.catLinks[lastSeg(b[i])]; if (n && l && !viaSk.has(n)) viaSk.set(n, L.prefix + l); });
+    }
+  }
+  for (const p of products) for (const c of p.cat.concat(p.dc)) {
+    const n = lastSeg(c); if (!n || catLinks[n]) continue;
+    const l = menu.get(spaced(n)) || (base ? viaSk.get(n) : (smap.has(slugRaw(n)) ? slugRaw(n) : smap.has(slug(n)) ? slug(n) : null));
     if (l) catLinks[n] = l;
   }
-  for (const n of ['Riadiace jednotky ZigBee', 'Riadiace jednotky Z-Wave']) {
-    const l = menu.get(spaced(n)) || (smap.has(slug(n)) ? slug(n) : null); if (l) catLinks[n] = l;
+  // riadiace jednotky pre upozornenie na bránu
+  let hubs;
+  if (base) hubs = { zigbee: base.hubs.zigbee && L.prefix + base.hubs.zigbee, zwave: base.hubs.zwave && L.prefix + base.hubs.zwave };
+  else {
+    const f = (n) => menu.get(spaced(n)) || (smap.has(slug(n)) ? slug(n) : null);
+    hubs = { zigbee: f('Riadiace jednotky ZigBee'), zwave: f('Riadiace jednotky Z-Wave') };
   }
-  const contact = menu.get('kontakty') || menu.get('kontakt') || '/kontakty/';
+  const contact = menu.get('kontakty') || menu.get('kontakt') || menu.get('contacts') || menu.get('contact') || (L.prefix + '/kontakty/');
 
-  // novinky z hlavnej stránky
+  // novinky z hlavnej stránky jazyka
   const byUrl = new Map(products.map((p) => [p.u, p]));
   let news = [];
-  for (let i = home.indexOf('Novinky v ponuke'); i >= 0; i = home.indexOf('Novinky v ponuke', i + 1)) {
-    const seg = home.slice(i, i + 40000), seen = [];
-    for (const m of seg.matchAll(/href="(?:https?:\/\/[^/"]+)?(\/[^"#?]+\/)"/g)) {
-      const p = byUrl.get(m[1]); if (p && !seen.includes(p.c)) seen.push(p.c); if (seen.length >= 8) break;
+  for (const m of home.matchAll(new RegExp(L.news.source, 'gi'))) {
+    const seg = home.slice(m.index, m.index + 40000), seen = [];
+    for (const mm of seg.matchAll(/href="(?:https?:\/\/[^/"]+)?(\/[^"#?]+\/)"/g)) {
+      const p = byUrl.get(mm[1]); if (p && !seen.includes(p.c)) seen.push(p.c); if (seen.length >= 8) break;
     }
     if (seen.length >= 4) { news = seen; break; }
   }
 
-  // články z blogu
-  const blogUrls = [...new Set([...sitemap.matchAll(/<loc>https?:\/\/[^/<]+(\/blog\/[^<]+)<\/loc>/g)].map((m) => m[1]))]
-    .filter((u) => !/\/blog\/(strana|page)-?\d/.test(u));
+  // články z blogu jazyka
+  const blogRe = new RegExp('<loc>https?:\\/\\/[^/<]+(' + (L.prefix ? L.prefix.replace('/', '\\/') : '') + '\\/blog\\/[^<]+)<\\/loc>', 'g');
+  const blogUrls = [...new Set([...sitemap.matchAll(blogRe)].map((m) => m[1]))].filter((u) => !/\/blog\/(strana|page)-?\d/.test(u));
   const articles = [];
   let bi = 0;
   const worker = async () => {
@@ -183,16 +220,42 @@ async function main() {
   await Promise.all(Array.from({ length: 6 }, worker));
   articles.sort((a, b) => a.u.localeCompare(b.u));
 
+  // Karlik: odkazy z menu jazyka
+  let kAll = null; const series = [];
+  for (const m of home.matchAll(/<a\s[^>]*href="([^"#]*)"[^>]*>([\s\S]*?)<\/a>/g)) {
+    const h = m[1].replace(/^https?:\/\/[^/]+/, ''), t = stripTags(m[2]);
+    if (!kAll && /vypinace_karlik/.test(h)) kAll = h;
+    if (/^(DECO|ICON|MINI)$/.test(t) && !series.some((s) => s[0] === t) && h.startsWith((L.prefix || '') + '/')) series.push([t, h]);
+  }
   const karlik = {
-    all: smap.has('/vypinace_karlik/') ? '/vypinace_karlik/' : '/karlik/',
-    series: [['DECO', '/deco/'], ['ICON', '/icon/'], ['MINI', '/vypinace-karlik-mini/']].filter((s) => smap.size === 0 || smap.has(s[1]))
+    all: kAll || (L.prefix + '/vypinace_karlik/'),
+    series: series.length ? series : (L.code === 'sk' ? [['DECO', '/deco/'], ['ICON', '/icon/'], ['MINI', '/vypinace-karlik-mini/']] : [])
   };
 
-  const index = { v: new Date().toISOString(), p: products, a: articles, n: news, c: catLinks, k: karlik, ct: contact };
-  mkdirSync(OUT, { recursive: true });
+  const index = { v: new Date().toISOString(), lang: L.code, p: products, a: articles, n: news, c: catLinks, h: hubs, k: karlik, ct: contact };
   const json = JSON.stringify(index);
-  writeFileSync(OUT + '/index.json', json);
-  console.log('Hotovo:', products.length, 'produktov,', articles.length, 'článkov,', news.length, 'noviniek,', Object.keys(catLinks).length, 'kategórií,', Math.round(json.length / 1024), 'kB,', Date.now() - t0, 'ms');
+  writeFileSync(OUT + '/' + L.file, json);
+  console.log(L.code + ':', products.length, 'produktov,', articles.length, 'článkov,', news.length, 'noviniek,', Object.keys(catLinks).length, 'kategórií,', Math.round(json.length / 1024), 'kB,', Date.now() - t0, 'ms');
+  return { products, catLinks, hubs };
+}
+
+async function main() {
+  if (!EXPORT_URL) throw new Error('Chýba tajomstvo EXPORT_URL.');
+  mkdirSync(OUT, { recursive: true });
+  const sitemap = await get(SHOP + '/sitemap.xml').catch(() => '');
+  const smap = new Set([...sitemap.matchAll(/<loc>https?:\/\/[^/<]+(\/[^<]*)<\/loc>/g)].map((m) => m[1]));
+  const base = await buildLang(LANGS[0], sitemap, smap, null);
+  const repo = process.env.GITHUB_REPOSITORY || '';
+  const pages = process.env.PAGES_URL || (repo ? 'https://' + repo.split('/')[0].toLowerCase() + '.github.io/' + repo.split('/')[1] + '/' : '');
+  for (const L of LANGS.slice(1)) {
+    try { await buildLang(L, sitemap, smap, base); }
+    catch (err) {
+      // jazyková verzia zlyhala: ponecháme poslednú zverejnenú, aby web fungoval ďalej
+      console.error('Upozornenie:', err.message);
+      try { writeFileSync(OUT + '/' + L.file, await get(pages + L.file, 2)); console.log(L.code + ': ponechaný predchádzajúci index'); }
+      catch (e) { console.error(L.code + ': predchádzajúci index nie je k dispozícii'); }
+    }
+  }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
