@@ -23,7 +23,7 @@
       karTitle: 'Vypínače a zásuvky Karlik', karText: 'Kompletný sortiment Karlik nájdete v samostatnej kategórii.', karAll: 'Celá ponuka Karlik →',
       loading: 'Načítavam produkty…', resFor: 'Výsledky pre', q1: '„', q2: '“', search: 'Vyhľadávanie', searchHint: 'Napíšte, čo hľadáte, alebo skúste niečo z obľúbených hľadaní:',
       onlyStock: 'Len skladom', sort: 'Zoradiť', rel: 'Najrelevantnejšie', asc: 'Najlacnejšie', desc: 'Najdrahšie', more: 'Zobraziť ďalšie', noFilter: 'S týmito filtrami nič nemáme, skúste niektorý vypnúť.',
-      lookingLow: 'hľadám:', fixedLow: 'zobrazujem výsledky pre', detail: 'Detail', searching: 'Hľadám…', blogUrl: '/blog/',
+      lookingLow: 'hľadám:', fixedLow: 'zobrazujem výsledky pre', detail: 'Detail', yourPrice: 'Vaša cena…', priceInDetail: 'Cena v detaile', searching: 'Hľadám…', blogUrl: '/blog/',
       plural: function (n) { return n === 1 ? 'produkt' : (n >= 2 && n <= 4) ? 'produkty' : 'produktov'; },
       showAll: function (n) { return (n >= 2 && n <= 4 ? 'Zobraziť všetky ' : 'Zobraziť všetkých ') + n + ' ' + this.plural(n); },
       popularQ: ['senzor úniku vody', 'termostatická hlavica', 'zigbee brána', 'smart zámok', 'shelly', 'homey'] },
@@ -37,7 +37,7 @@
       karTitle: 'Vypínače a zásuvky Karlik', karText: 'Kompletní sortiment Karlik najdete v samostatné kategorii.', karAll: 'Celá nabídka Karlik →',
       loading: 'Načítám produkty…', resFor: 'Výsledky pro', q1: '„', q2: '“', search: 'Vyhledávání', searchHint: 'Napište, co hledáte, nebo zkuste něco z oblíbených hledání:',
       onlyStock: 'Jen skladem', sort: 'Seřadit', rel: 'Nejrelevantnější', asc: 'Nejlevnější', desc: 'Nejdražší', more: 'Zobrazit další', noFilter: 'S těmito filtry nic nemáme, zkuste některý vypnout.',
-      lookingLow: 'hledám:', fixedLow: 'zobrazuji výsledky pro', detail: 'Detail', searching: 'Hledám…', blogUrl: '/cs/blog/',
+      lookingLow: 'hledám:', fixedLow: 'zobrazuji výsledky pro', detail: 'Detail', yourPrice: 'Vaše cena…', priceInDetail: 'Cena v detailu', searching: 'Hledám…', blogUrl: '/cs/blog/',
       plural: function (n) { return n === 1 ? 'produkt' : (n >= 2 && n <= 4) ? 'produkty' : 'produktů'; },
       showAll: function (n) { return (n >= 2 && n <= 4 ? 'Zobrazit všechny ' : 'Zobrazit všech ') + n + ' ' + this.plural(n); },
       popularQ: ['senzor úniku vody', 'termostatická hlavice', 'zigbee brána', 'chytrý zámek', 'shelly', 'homey'] },
@@ -51,7 +51,7 @@
       karTitle: 'Karlik switches and sockets', karText: 'You’ll find the full Karlik range in a separate category.', karAll: 'All Karlik products →',
       loading: 'Loading products…', resFor: 'Results for', q1: '“', q2: '”', search: 'Search', searchHint: 'Type what you’re looking for, or try a popular search:',
       onlyStock: 'In stock only', sort: 'Sort', rel: 'Most relevant', asc: 'Lowest price', desc: 'Highest price', more: 'Show more', noFilter: 'Nothing matches these filters, try turning one off.',
-      lookingLow: 'looking for:', fixedLow: 'showing results for', detail: 'Details', searching: 'Searching…', blogUrl: '/en/blog/',
+      lookingLow: 'looking for:', fixedLow: 'showing results for', detail: 'Details', yourPrice: 'Your price…', priceInDetail: 'Price on product page', searching: 'Searching…', blogUrl: '/en/blog/',
       plural: function (n) { return n === 1 ? 'product' : 'products'; },
       showAll: function (n) { return 'Show all ' + n + ' ' + this.plural(n); },
       popularQ: ['water leak sensor', 'radiator thermostat', 'zigbee gateway', 'smart lock', 'shelly', 'homey'] }
@@ -474,6 +474,7 @@
     '.hsp .hss-more{max-width:360px;margin:20px auto 0}' +
     '@media(max-width:520px){.hsp-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.hsp-img{height:110px}.hsp-card{padding:8px}.hsp-name{font-size:14px}.hsp-bot{flex-direction:column;align-items:stretch}.hsp-title{font-size:21px}.hsp-card .hss-tag:nth-of-type(n+2){display:none}}' +
     'body.hsp-on main.content > *:not(.hsp){display:none!important}' +
+    '.hss-pend{font:600 12.5px "Source Sans 3",sans-serif;color:#6b7680}.hss-pulse{animation:hssp 1.2s ease-in-out infinite}@keyframes hssp{50%{opacity:.4}}@media (prefers-reduced-motion:reduce){.hss-pulse{animation:none}}' +
     '.search-whisperer{display:none!important}';
 
   var thumb = function (u, size) { return u ? u.replace(/\/shop\/(orig|big|detail)\//, '/shop/' + (size || 'related') + '/') : ''; };
@@ -499,14 +500,73 @@
     var h = '';
     if (p.fl.indexOf('tip') >= 0) h += '<span class="hss-flag hss-f-tip">' + T.tip + '</span>';
     if (NEW.indexOf(p) >= 0) h += '<span class="hss-flag hss-f-new">' + T.isNew + '</span>';
-    if (p.un) {
+    if (p.un && !PL && RATIO === 1) {
       var d = Math.ceil((new Date(p.un + 'T23:59:59') - new Date()) / 864e5);
       if (d <= 7) h += '<span class="hss-flag hss-f-sale">' + (d <= 1 ? T.saleToday : T.saleDays(d)) + '</span>';
     }
     return h;
   }
+  /* ---------- ceny pre prihlásených zákazníkov s vlastným cenníkom ----------
+     Index obsahuje len verejné ceny. Veľkoobchodné ceny sa nikde nezverejňujú: pre zákazníka
+     s vlastným cenníkom si ich načítame priamo zo Shoptetu (zo stránky produktu, len pre zobrazené
+     produkty) a uložíme do jeho prehliadača na 30 minút. Pri percentuálnej zľave skupiny len prepočítame. */
+  var CU = DL0.customer || {};
+  var PL = CU.registered && +CU.priceListId && +CU.priceListId !== 1 ? +CU.priceListId : 0;
+  var RATIO = CU.registered && !PL && +CU.priceRatio && +CU.priceRatio !== 1 ? +CU.priceRatio : 1;
+  var LP = {}, LPKEY = 'hss_lp_' + PL + '_' + L, lpQ = [], lpRun = 0;
+  if (PL) { try { var lpc = JSON.parse(sessionStorage.getItem(LPKEY) || 'null'); if (lpc && Date.now() - lpc.t < 1800000) LP = lpc.d || {}; } catch (e) {} }
+  function lpSave() { try { var d = {}; Object.keys(LP).forEach(function (k) { if (typeof LP[k] === 'object') d[k] = LP[k]; }); sessionStorage.setItem(LPKEY, JSON.stringify({ t: Date.now(), d: d })); } catch (e) {} }
+  function fetchPrice(u) {
+    return fetch(u, { credentials: 'same-origin' }).then(function (r) {
+      if (!r.ok || !r.body) throw new Error('price ' + r.status);
+      var rd = r.body.getReader(), dec = new TextDecoder(), buf = '';
+      var pump = function () {
+        return rd.read().then(function (x) {
+          if (!x.done) buf += dec.decode(x.value, { stream: true });
+          var i = buf.indexOf('price-final-holder');
+          if (!x.done && !(i >= 0 && buf.length > i + 1500)) return pump();
+          try { rd.cancel(); } catch (e) {}
+          var seg = i >= 0 ? buf.slice(i - 40, i + 1500) : '';
+          var f = (seg.match(/class="price-final-holder"[^>]*>([^<]*)</) || [])[1];
+          var x2 = (seg.match(/class="price-additional"[^>]*>([^<]*)</) || [])[1];
+          if (!f || !/\d/.test(f)) throw new Error('price not found');
+          return { f: f.replace(/\s+/g, ' ').trim(), x: x2 ? x2.replace(/\s+/g, ' ').trim() : '' };
+        });
+      };
+      return pump();
+    });
+  }
+  function lpPaint(u) {
+    document.querySelectorAll('[data-pu]').forEach(function (el) { if (el.getAttribute('data-pu') === u) el.innerHTML = priceInner(u, el.getAttribute('data-pm') === '1'); });
+  }
+  function lpNext() {
+    while (lpRun < 4 && lpQ.length) {
+      var u = lpQ.shift(); lpRun++;
+      (function (u) {
+        fetchPrice(u).then(function (v) { LP[u] = v; }).catch(function () { LP[u] = 'err'; })
+          .then(function () { lpRun--; lpSave(); lpPaint(u); lpNext(); });
+      })(u);
+    }
+  }
+  function livePrices(list) {
+    if (!PL) return;
+    list.forEach(function (p) { if (p && !LP[p.u]) { LP[p.u] = 'pending'; lpQ.push(p.u); } });
+    lpNext();
+  }
+  function priceInner(u, mini) {
+    var v = LP[u];
+    if (v && typeof v === 'object') return mini ? esc(v.f) : '<strong>' + esc(v.f) + '</strong>' + (v.x ? '<div class="hss-old" style="text-decoration:none">' + esc(v.x) + '</div>' : '');
+    if (v === 'err') return '<span class="hss-pend">' + T.priceInDetail + '</span>';
+    return '<span class="hss-pend hss-pulse">' + T.yourPrice + '</span>';
+  }
   function priceHtml(p) {
+    if (PL) return '<div data-pu="' + esc(p.u) + '">' + priceInner(p.u) + '</div>';
+    if (RATIO !== 1) return '<strong>' + (p.f ? T.from : '') + money(p.p * RATIO) + '</strong>';
     return '<strong>' + (p.f ? T.from : '') + money(p.p) + '</strong>' + (p.o ? '<div class="hss-old">' + money(p.o) + '</div>' : '');
+  }
+  function priceText(p) {
+    if (PL) return '<span data-pu="' + esc(p.u) + '" data-pm="1">' + priceInner(p.u, true) + '</span>';
+    return money(p.p * RATIO) + (RATIO === 1 && p.o ? ' <span class="hss-old" style="display:inline">' + money(p.o) + '</span>' : '');
   }
   function canCart() { return !!(window.shoptet && shoptet.cartShared && typeof shoptet.cartShared.addToCart === 'function'); }
   function row(p, pq, i) {
@@ -514,7 +574,7 @@
     if (!p.ok && p.al.length) {
       for (var k = 0; k < p.al.length; k++) {
         var a = IX.byCode.get(p.al[k]);
-        if (a && a.ok) { alt = '<div class="hss-alt">' + T.similar + ' <a href="' + esc(a.u) + '">' + esc(a.n) + '</a> ' + T['for'] + ' ' + money(a.p) + '</div>'; break; }
+        if (a && a.ok) { alt = '<div class="hss-alt">' + T.similar + ' <a href="' + esc(a.u) + '">' + esc(a.n) + '</a>' + (PL ? '' : ' ' + T['for'] + ' ' + money(a.p * RATIO)) + '</div>'; break; }
       }
     }
     var tags = p.proto.slice(0, 3).map(function (x) { return '<span class="hss-tag">' + x + '</span>'; }).join('') +
@@ -539,13 +599,13 @@
     h += '<div class="hss-h">' + T.popular + '</div><div class="hss-chips">' + POPULAR.map(function (x) { return '<button type="button" class="hss-chip" data-q="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>';
     var nw = NEW.filter(function (p) { return p.ok; }).slice(0, 4);
     if (nw.length) h += '<div class="hss-h">' + T.news + '</div><div class="hss-grid">' + nw.map(function (p) {
-      return '<a class="hss-card" href="' + esc(p.u) + '">' + imgTag(p.i, '', 'detail_small') + '<div class="n">' + esc(p.n) + '</div><div class="pr">' + money(p.p) + '</div></a>';
+      return '<a class="hss-card" href="' + esc(p.u) + '">' + imgTag(p.i, '', 'detail_small') + '<div class="n">' + esc(p.n) + '</div><div class="pr">' + priceText(p) + '</div></a>';
     }).join('') + '</div>';
     h += '</div><div class="hss-side">';
     var sale = IX.P.filter(function (p) { return p.ok && p.un; }).sort(function (a, b) { return a.un < b.un ? -1 : 1; }).slice(0, 4);
     if (sale.length < 3) sale = IX.P.filter(function (p) { return p.ok && p.o; }).sort(function (a, b) { return (b.o - b.p) / b.o - (a.o - a.p) / a.o; }).slice(0, 4);
     if (sale.length) h += '<div class="hss-h">' + T.sale + '</div>' + sale.map(function (p) {
-      return '<a class="hss-mini" href="' + esc(p.u) + '">' + imgTag(p.i, '') + '<div><div class="n">' + esc(p.n) + '</div><div class="pr">' + money(p.p) + (p.o ? ' <span class="hss-old" style="display:inline">' + money(p.o) + '</span>' : '') + '</div></div></a>';
+      return '<a class="hss-mini" href="' + esc(p.u) + '">' + imgTag(p.i, '') + '<div><div class="n">' + esc(p.n) + '</div><div class="pr">' + priceText(p) + '</div></div></a>';
     }).join('');
     return h + '</div></div>';
   }
@@ -693,6 +753,7 @@
     if (KARLIK && kWeak && !kStrong) h += karlikHtml();
     if (!pq.intent && arts.length) h += '<div class="hss-h" style="margin-top:28px">' + T.blog + '</div><div class="hsp-arts">' + arts.slice(0, 3).map(function (a) { return '<a class="hsp-art" href="' + esc(a.u) + '"><span>' + esc(a.t) + '</span>' + (a.d ? '<small>' + esc(a.d) + '</small>' : '') + '</a>'; }).join('') + '</div>';
     PG.root.innerHTML = h;
+    if (PL) livePrices(list.slice(0, PG.lim));
     document.title = T.resFor + ' ' + T.q1 + q + T.q2 + ' | HomeSystem';
     track(q, all.length);
   }
@@ -782,6 +843,7 @@
     if (!IX) { panel.innerHTML = '<div class="hss-main"><div class="hss-empty">' + T.loading + '</div></div>'; return; }
     st.act = -1;
     panel.innerHTML = spaced(input.value).length < 2 ? emptyHtml() : results();
+    if (PL) { var pus = {}; panel.querySelectorAll('[data-pu]').forEach(function (el) { pus[el.getAttribute('data-pu')] = 1; }); livePrices(Object.keys(pus).map(function (u) { return IX.byUrl.get(u); })); }
   }
   function follow() {
     if (!open) return;
