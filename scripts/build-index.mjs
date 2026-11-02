@@ -104,17 +104,29 @@ export function productsFromXml(xml, today = new Date().toISOString().slice(0, 1
 
 /* ---------- pomocné stiahnutie ---------- */
 const UA = 'HomeSystem-search-index/1.1';
+const label = (url) => url === EXPORT_URL ? 'export' : url.replace(/[?#].*$/, '');
 async function get(url, tries = 3, headers = {}) {
   for (let t = 1; ; t++) {
+    let status = 0;
     try {
       const r = await fetch(url, { headers: Object.assign({ 'User-Agent': UA }, headers) });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
+      status = r.status;
+      if (!r.ok) {
+        const body = (await r.text().catch(() => '')).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+        throw new Error('HTTP ' + r.status + ' pri ' + label(url) + (r.headers.get('retry-after') ? ' (retry-after ' + r.headers.get('retry-after') + ')' : '') + (body ? ' – ' + body : ''));
+      }
       return await r.text();
     } catch (err) {
       if (t >= tries) throw err;
-      await new Promise((r) => setTimeout(r, 3000 * t));
+      // pri zamietnutí (403/429) počkať dlhšie
+      await new Promise((r) => setTimeout(r, (status === 403 || status === 429 ? 20000 : 3000) * t));
     }
   }
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function previous(pages, file) {
+  if (!pages) return null;
+  try { return JSON.parse(await get(pages + file + '?t=' + Date.now(), 2)); } catch (e) { return null; }
 }
 const spaced = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 const slug = (s) => '/' + (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '/';
@@ -153,7 +165,7 @@ function menuMap(home) {
 }
 const lastSeg = (c) => c.split('>').pop().trim();
 
-async function buildLang(L, sitemap, smap, base) {
+async function buildLang(L, sitemap, smap, base, prev) {
   const t0 = Date.now();
   const headers = await langSession(L.code);
   const xml = await get(EXPORT_URL, 3, headers);
@@ -204,11 +216,15 @@ async function buildLang(L, sitemap, smap, base) {
   // články z blogu jazyka
   const blogRe = new RegExp('<loc>https?:\\/\\/[^/<]+(' + (L.prefix ? L.prefix.replace('/', '\\/') : '') + '\\/blog\\/[^<]+)<\\/loc>', 'g');
   const blogUrls = [...new Set([...sitemap.matchAll(blogRe)].map((m) => m[1]))].filter((u) => !/\/blog\/(strana|page)-?\d/.test(u));
-  const articles = [];
+  // články, ktoré už poznáme z predchádzajúceho indexu, znovu nesťahujeme (šetrnosť k Shoptetu)
+  const known = new Map(((prev && prev.a) || []).map((a) => [a.u, a]));
+  const articles = blogUrls.filter((u) => known.has(u)).map((u) => known.get(u));
+  const todo = blogUrls.filter((u) => !known.has(u));
   let bi = 0;
   const worker = async () => {
-    while (bi < blogUrls.length) {
-      const u = blogUrls[bi++];
+    while (bi < todo.length) {
+      const u = todo[bi++];
+      await sleep(300);
       try {
         const h = await get(SHOP + u, 2);
         const t = stripTags((h.match(/<h1[^>]*>([\s\S]*?)<\/h1>/) || h.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || '');
@@ -217,7 +233,7 @@ async function buildLang(L, sitemap, smap, base) {
       } catch (e) { /* jeden článok nevadí */ }
     }
   };
-  await Promise.all(Array.from({ length: 6 }, worker));
+  await Promise.all(Array.from({ length: 2 }, worker));
   articles.sort((a, b) => a.u.localeCompare(b.u));
 
   // Karlik: odkazy z menu jazyka
@@ -242,20 +258,27 @@ async function buildLang(L, sitemap, smap, base) {
 async function main() {
   if (!EXPORT_URL) throw new Error('Chýba tajomstvo EXPORT_URL.');
   mkdirSync(OUT, { recursive: true });
-  const sitemap = await get(SHOP + '/sitemap.xml').catch(() => '');
-  const smap = new Set([...sitemap.matchAll(/<loc>https?:\/\/[^/<]+(\/[^<]*)<\/loc>/g)].map((m) => m[1]));
-  const base = await buildLang(LANGS[0], sitemap, smap, null);
   const repo = process.env.GITHUB_REPOSITORY || '';
   const pages = process.env.PAGES_URL || (repo ? 'https://' + repo.split('/')[0].toLowerCase() + '.github.io/' + repo.split('/')[1] + '/' : '');
-  for (const L of LANGS.slice(1)) {
-    try { await buildLang(L, sitemap, smap, base); }
-    catch (err) {
-      // jazyková verzia zlyhala: ponecháme poslednú zverejnenú, aby web fungoval ďalej
-      console.error('Upozornenie:', err.message);
-      try { writeFileSync(OUT + '/' + L.file, await get(pages + L.file, 2)); console.log(L.code + ': ponechaný predchádzajúci index'); }
-      catch (e) { console.error(L.code + ': predchádzajúci index nie je k dispozícii'); }
+  const sitemap = await get(SHOP + '/sitemap.xml').catch(() => '');
+  const smap = new Set([...sitemap.matchAll(/<loc>https?:\/\/[^/<]+(\/[^<]*)<\/loc>/g)].map((m) => m[1]));
+  let base = null, fails = 0;
+  for (const L of LANGS) {
+    const prev = await previous(pages, L.file);
+    try {
+      if (L.code !== 'sk' && !base) throw new Error('slovenská verzia zlyhala, preskakujem');
+      const r = await buildLang(L, sitemap, smap, base, prev);
+      if (L.code === 'sk') base = r;
+    } catch (err) {
+      fails++;
+      // nepodarilo sa: ponecháme poslednú zverejnenú verziu, web funguje ďalej
+      console.log('::warning::' + L.code + ': ' + err.message);
+      if (prev) { writeFileSync(OUT + '/' + L.file, JSON.stringify(prev)); console.log(L.code + ': ponechaný predchádzajúci index z ' + prev.v); }
+      else console.log(L.code + ': predchádzajúci index nie je k dispozícii');
     }
+    await sleep(15000); // pauza medzi jazykmi
   }
+  if (fails === LANGS.length) console.log('::warning::Shoptet tentoraz odmietol všetky exporty – na webe zostávajú posledné funkčné indexy.');
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
