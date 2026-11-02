@@ -60,7 +60,7 @@
   var CATX = /kompatibiln|^ostatn|^other|black friday|dopredaj|doprodej|^seo|works with|compatible|odbalen|rozbalen|unbox|zvyhodnen|bundle|clearance/;
   var C = Object.assign({
     exportUrl: null, indexUrl: SRC ? SRC.replace(/[?#].*$/, '').replace(/[^/]+$/, LANGS[L].idx) : null,
-    test: /[?&]test=1/.test(SRC), track: true, badge: false, debug: false, drop: 8, contact: '/kontakty/'
+    test: /[?&]test=1/.test(SRC), track: true, ga: ['G-4L3DHB1QMX', 'G-NVETVR9VP9'], badge: false, debug: false, drop: 8, contact: '/kontakty/'
   }, window.HSS_CONFIG || {});
   /* testovací režim: zapne sa len návštevníkovi s ?novehladanie=1 (vypne ?novehladanie=0) */
   if (C.test) {
@@ -634,12 +634,12 @@
     if (cats.length && cc[cats[0]] >= 6) cats = cats.filter(function (c) { return cc[c] >= 6; });
     return cats.slice(0, 6).map(function (c) { return [c, cn[c]]; });
   }
-  function card(p, pq) {
+  function card(p, pq, i) {
     var alt = '';
     if (!p.ok && p.al.length) for (var k = 0; k < p.al.length; k++) { var a = IX.byCode.get(p.al[k]); if (a && a.ok) { alt = '<div class="hss-alt">' + T.similar + ' <a href="' + esc(a.u) + '">' + esc(a.n) + '</a></div>'; break; } }
     var tags = p.proto.slice(0, 2).map(function (x) { return '<span class="hss-tag">' + x + '</span>'; }).join('') +
       (p.fl.indexOf('custom3') >= 0 ? '<span class="hss-tag">' + T.homey + '</span>' : '') + (p.fl.indexOf('custom1') >= 0 ? '<span class="hss-tag">' + T.fibaro + '</span>' : '');
-    return '<div class="hsp-card" data-u="' + esc(p.u) + '"><div class="hsp-flags">' + flagHtml(p) + '</div>' +
+    return '<div class="hsp-card" data-i="' + (i || 0) + '" data-u="' + esc(p.u) + '"><div class="hsp-flags">' + flagHtml(p) + '</div>' +
       '<a href="' + esc(p.u) + '" tabindex="-1">' + imgTag(p.i, 'hsp-img', 'detail_small') + '</a>' +
       '<a class="hsp-name" href="' + esc(p.u) + '">' + hl(p.n, pq) + '</a>' +
       '<div class="hss-meta">' + availHtml(p) + tags + '</div>' + alt +
@@ -656,9 +656,11 @@
       return;
     }
     var r = search(q), pq = r.pq, all = r.res.map(function (x) { return x.p; }), partial = r.res.length && r.res[0].partial;
+    PG.shown = null;
     var list = all.filter(function (p) { return (!PG.f || p.proto.indexOf(PG.f) >= 0) && (!PG.stock || p.ok); });
     if (PG.sort === 'asc') list = list.slice().sort(function (a, b) { return a.p - b.p; });
     if (PG.sort === 'desc') list = list.slice().sort(function (a, b) { return b.p - a.p; });
+    PG.shown = list;
     var arts = searchArticles(pq), cats = catsFor(all.slice(0, 60), pq);
     var kq = spaced(q), kStrong = /\b(karlik\w*|deco|icon|ramik\w*|ramcek\w*|ramc\w*|ramec\w*|frames?)\b/.test(kq), kWeak = /\b(vypinac\w*|zasuvk\w*|dvojzasuvk\w*|switch\w*|sockets?)\b/.test(kq);
     h += '<h1 class="hsp-title">' + T.resFor + ' ' + T.q1 + esc(q) + T.q2 + '</h1><div class="hsp-sub">' + all.length + ' ' + plural(all.length) +
@@ -679,7 +681,7 @@
     if (!all.length && !(KARLIK && kStrong)) h += '<div class="hss-empty">' + T.none1 + esc(q) + T.none2 + '<a href="' + esc(CONTACT) + '">' + T.none3 + '</a>' + T.none4 + '</div><div class="hss-chips">' +
       POPULAR.map(function (x) { return '<button type="button" class="hss-chip" data-q="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>';
     if (all.length && !list.length) h += '<div class="hss-empty">' + T.noFilter + '</div>';
-    h += '<div class="hsp-grid">' + list.slice(0, PG.lim).map(function (p) { return card(p, pq); }).join('') + '</div>';
+    h += '<div class="hsp-grid">' + list.slice(0, PG.lim).map(function (p, i) { return card(p, pq, i); }).join('') + '</div>';
     if (list.length > PG.lim) h += '<button type="button" class="hss-more" data-pmore="1">' + T.more + ' (' + (list.length - PG.lim) + ')</button>';
     var zb = list.slice(0, 12).filter(function (p) { return p.proto.indexOf('Zigbee') >= 0 && p.proto.indexOf('Wi-Fi') < 0; }).length;
     var zw = list.slice(0, 12).filter(function (p) { return p.proto.indexOf('Z-Wave') >= 0; }).length;
@@ -702,12 +704,17 @@
     if (pm) { PG.lim += 24; renderPage(); return; }
     if (cart) {
       ev.preventDefault();
+      var cc = cart.closest('.hsp-card');
+      if (cc && PG.shown) trackItem(PG.shown[+cc.getAttribute('data-i')], +cc.getAttribute('data-i') + 1, 'page', PG.q, 'search_add_to_cart');
       try { shoptet.cartShared.addToCart({ productCode: cart.getAttribute('data-c') }); cart.textContent = T.added; }
       catch (e) { var p = IX.byCode.get(cart.getAttribute('data-c')); if (p) location.href = p.u; }
       return;
     }
+    var c = t.closest('.hsp-card');
+    if (c && !t.closest('.hss-alt') && PG.shown) trackItem(PG.shown[+c.getAttribute('data-i')], +c.getAttribute('data-i') + 1, 'page', PG.q);
+    else trackLink(t, PG.q, 'page');
     if (t.closest('a[href]')) return;
-    var c = t.closest('.hsp-card'); if (c) location.href = c.getAttribute('data-u');
+    if (c) location.href = c.getAttribute('data-u');
   }
   function initPage(start) {
     var main = document.querySelector('main.content') || document.getElementById('content');
@@ -737,9 +744,21 @@
     clearTimeout(tTimer);
     tTimer = setTimeout(function () {
       if (typeof window.gtag !== 'function') return;
-      gtag('event', 'search', { search_term: q, results_count: n, language: L });
-      if (!n) gtag('event', 'search_no_results', { search_term: q, language: L });
+      gtag('event', 'search', { search_term: q, results_count: n, language: L, send_to: C.ga });
+      if (!n) gtag('event', 'search_no_results', { search_term: q, language: L, send_to: C.ga });
     }, 1500);
+  }
+  /* kliknutia z vyhľadávania: na ktorý produkt / kategóriu / článok ľudia klikli a na akej pozícii */
+  function ga(name, params) { if (C.track && typeof window.gtag === 'function') { try { params.language = L; params.send_to = C.ga; gtag('event', name, params); } catch (e) {} } }
+  function trackItem(p, pos, where, q, ev) {
+    if (!p) return;
+    ga(ev || 'select_item', { item_list_id: 'hss_' + where, item_list_name: where === 'page' ? 'Vyhľadávanie – stránka' : 'Vyhľadávanie – okno', search_term: q, result_position: pos,
+      items: [{ item_id: p.c, item_name: p.n, item_brand: p.m, price: p.p, index: pos, item_list_name: where === 'page' ? 'Vyhľadávanie – stránka' : 'Vyhľadávanie – okno' }] });
+  }
+  function trackLink(t, q, where) {
+    var a = t.closest('a[href]'); if (!a) return;
+    var type = a.closest('.hss-cat, .hsp-cat') ? 'kategoria' : a.closest('.hss-art, .hsp-art') ? 'clanok' : a.closest('.hss-karlik') ? 'karlik' : a.closest('.hss-alt') ? 'alternativa' : a.closest('.hss-card, .hss-mini') ? 'novinka_akcia' : a.closest('.hss-hint') ? 'riadiace_jednotky' : null;
+    if (type) ga('search_link_click', { link_type: type, link_text: (a.querySelector('span') ? a.querySelector('span').textContent : a.textContent.replace(a.querySelector('b') ? a.querySelector('b').textContent : '', '')).replace(/\s+/g, ' ').trim().slice(0, 100), link_url: a.getAttribute('href'), search_term: q, list: where });
   }
 
   /* ---------- panel + input wiring ---------- */
@@ -786,6 +805,8 @@
     if (more) { goSearch(input.value); return; }
     if (cart) {
       ev.preventDefault();
+      var cr = cart.closest('.hss-row');
+      if (cr) trackItem(st.list[+cr.getAttribute('data-i')], +cr.getAttribute('data-i') + 1, 'dropdown', input.value, 'search_add_to_cart');
       try {
         shoptet.cartShared.addToCart({ productCode: cart.getAttribute('data-c') });
         cart.textContent = T.added;
@@ -795,9 +816,12 @@
       catch (e) { var p = IX.byCode.get(cart.getAttribute('data-c')); if (p) go(p.u); }
       return;
     }
+    var r = t.closest('.hss-row');
+    if (r && !t.closest('.hss-alt')) trackItem(st.list[+r.getAttribute('data-i')], +r.getAttribute('data-i') + 1, 'dropdown', input.value);
+    else trackLink(t, input.value, 'dropdown');
     var a = t.closest('a[href]');
     if (a) { remember(input.value); return; }
-    var r = t.closest('.hss-row'); if (r) go(r.getAttribute('data-u'));
+    if (r) go(r.getAttribute('data-u'));
   }
   function attach(orig) {
     var inp = orig.cloneNode(true);
@@ -814,7 +838,7 @@
       else if (e.key === 'Enter') {
         if (FAIL) return;
         e.preventDefault(); e.stopPropagation();
-        if (st.act >= 0 && st.list[st.act]) go(st.list[st.act].u);
+        if (st.act >= 0 && st.list[st.act]) { trackItem(st.list[st.act], st.act + 1, 'dropdown', inp.value); go(st.list[st.act].u); }
         else { input = inp; goSearch(inp.value); }
       }
     });
