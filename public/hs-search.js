@@ -60,7 +60,7 @@
   var CATX = /kompatibiln|^ostatn|^other|black friday|dopredaj|doprodej|^seo|works with|compatible|odbalen|rozbalen|unbox|zvyhodnen|bundle|clearance/;
   var C = Object.assign({
     exportUrl: null, indexUrl: SRC ? SRC.replace(/[?#].*$/, '').replace(/[^/]+$/, LANGS[L].idx) : null,
-    test: /[?&]test=1/.test(SRC), track: true, ga: ['G-4L3DHB1QMX', 'G-NVETVR9VP9'], badge: false, debug: false, drop: 8, contact: '/kontakty/'
+    test: /[?&]test=1/.test(SRC), track: true, ga: ['G-4L3DHB1QMX', 'G-NVETVR9VP9'], news: 3, badge: false, debug: false, drop: 8, contact: '/kontakty/'
   }, window.HSS_CONFIG || {});
   /* testovací režim: zapne sa len návštevníkovi s ?novehladanie=1 (vypne ?novehladanie=0) */
   if (C.test) {
@@ -435,7 +435,7 @@
     '.hss-side .hss-art span{color:#fff}.hss-side .hss-art small{color:#cfe6f7}.hss-side .hss-art:hover span{text-decoration:underline}' +
     '.hss-more{display:block;width:100%;margin-top:12px;padding:10px;border:0;border-radius:6px;background:#1272b3;color:#fff;font:700 14px "Exo 2",sans-serif;text-transform:uppercase;letter-spacing:.03em;cursor:pointer}.hss-more:hover{background:#0d5a8f}' +
     '.hss-cart{margin-top:5px;padding:4px 12px;border:0;background:#ffc807;color:#1f1f1f;border-radius:5px;font:700 12px "Exo 2",sans-serif;text-transform:uppercase;cursor:pointer}.hss-cart:hover{background:#1f1f1f;color:#fff}' +
-    '.hss-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}' +
+    '.hss-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}' +
     '.hss-card{display:block;text-decoration:none!important;color:inherit!important;border:1px solid #e3eef7;border-radius:8px;padding:8px}.hss-card:hover{border-color:#1272b3}' +
     '.hss-card img{width:100%;height:84px;object-fit:contain}.hss-card .n{font-size:13px;font-weight:600;line-height:1.3;height:51px;overflow:hidden;margin-top:4px}' +
     '.hss-card .pr{font:700 14px "Exo 2",sans-serif;margin-top:4px}' +
@@ -597,7 +597,7 @@
     var rec = recent(), h = '<div class="hss-wrap"><div class="hss-main">';
     if (rec.length) h += '<div class="hss-h">' + T.recent + '</div><div class="hss-chips">' + rec.map(function (x) { return '<button type="button" class="hss-chip" data-q="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>';
     h += '<div class="hss-h">' + T.popular + '</div><div class="hss-chips">' + POPULAR.map(function (x) { return '<button type="button" class="hss-chip" data-q="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>';
-    var nw = NEW.filter(function (p) { return p.ok; }).slice(0, 4);
+    var nw = NEW.filter(function (p) { return p.ok; }).slice(0, C.news);
     if (nw.length) h += '<div class="hss-h">' + T.news + '</div><div class="hss-grid">' + nw.map(function (p) {
       return '<a class="hss-card" href="' + esc(p.u) + '">' + imgTag(p.i, '', 'detail_small') + '<div class="n">' + esc(p.n) + '</div><div class="pr">' + priceText(p) + '</div></a>';
     }).join('') + '</div>';
