@@ -147,9 +147,9 @@ async function langSession(lang) {
 }
 
 const LANGS = [
-  { code: 'sk', prefix: '', file: 'index.json', news: /Novinky v ponuke/ },
-  { code: 'cs', prefix: '/cs', file: 'index-cs.json', news: /Novinky v nabídce/ },
-  { code: 'en', prefix: '/en', file: 'index-en.json', news: /New Arrivals/i }
+  { code: 'sk', prefix: '', file: 'index.json', news: /Novinky v ponuke|Novinky v nabídce|New Arrivals/i },
+  { code: 'cs', prefix: '/cs', file: 'index-cs.json', news: /Novinky v ponuke|Novinky v nabídce|New Arrivals/i },
+  { code: 'en', prefix: '/en', file: 'index-en.json', news: /Novinky v ponuke|Novinky v nabídce|New Arrivals/i }
 ];
 
 function menuMap(home) {
@@ -204,14 +204,19 @@ async function buildLang(L, sitemap, smap, base, prev) {
 
   // novinky z hlavnej stránky jazyka
   const byUrl = new Map(products.map((p) => [p.u, p]));
+  // sekcia na titulke: nadpis s triedou homepage-group-title (rovnaký text je aj v menu, ten preskočíme)
   let news = [];
-  for (const m of home.matchAll(new RegExp(L.news.source, 'gi'))) {
-    const seg = home.slice(m.index, m.index + 40000), seen = [];
-    for (const mm of seg.matchAll(/href="(?:https?:\/\/[^/"]+)?(\/[^"#?]+\/)"/g)) {
-      const p = byUrl.get(mm[1]); if (p && !seen.includes(p.c)) seen.push(p.c); if (seen.length >= 8) break;
+  const titles = [...home.matchAll(/<[a-z0-9]+[^>]*class="[^"]*homepage-group-title[^"]*"[^>]*>([\s\S]*?)<\/(?:h\d|div|span|p)>/gi)];
+  for (let k = 0; k < titles.length; k++) {
+    if (!L.news.test(stripTags(titles[k][1]))) continue;
+    const start = titles[k].index, end = k + 1 < titles.length ? titles[k + 1].index : start + 80000;
+    const seen = [];
+    for (const mm of home.slice(start, end).matchAll(/href="(?:https?:\/\/[^/"]+)?(\/[^"#?]+\/)"/g)) {
+      const p = byUrl.get(mm[1]); if (p && !seen.includes(p.c)) seen.push(p.c); if (seen.length >= 12) break;
     }
-    if (seen.length >= 4) { news = seen; break; }
+    if (seen.length) { news = seen; break; }
   }
+  if (!news.length) console.log('::warning::' + L.code + ': sekcia noviniek na titulke sa nenašla');
 
   // články z blogu jazyka
   const blogRe = new RegExp('<loc>https?:\\/\\/[^/<]+(' + (L.prefix ? L.prefix.replace('/', '\\/') : '') + '\\/blog\\/[^<]+)<\\/loc>', 'g');
