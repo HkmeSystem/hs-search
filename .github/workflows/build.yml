@@ -48,7 +48,7 @@ jobs:
   # GitHub vypína plánované úlohy po 60 dňoch bez zmeny v repozitári.
   # Raz za mesiac preto zapíše malú zmenu, aby aktualizácia nikdy nezastala.
   keepalive:
-    if: github.event_name == 'schedule'
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
