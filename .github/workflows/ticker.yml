@@ -1,0 +1,31 @@
+name: Ticker
+
+# GitHub plánované úlohy (cron) často odkladá alebo vynecháva.
+# Táto úloha beží ~5,5 hodiny, každých 30 minút spustí zostavenie indexu
+# a na konci naštartuje samu seba. Cron nižšie ju len poisťuje, keby sa zastavila.
+on:
+  schedule:
+    - cron: '17 */3 * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+concurrency:
+  group: ticker
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - name: Spúšťanie zostavenia každých 30 minút
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 1 11); do
+            gh workflow run build.yml --repo "$GITHUB_REPOSITORY" --ref main || echo "::warning::Zostavenie sa nepodarilo spustiť"
+            sleep 1800
+          done
+          gh workflow run ticker.yml --repo "$GITHUB_REPOSITORY" --ref main || echo "::warning::Ticker sa nepodarilo znova spustiť"
