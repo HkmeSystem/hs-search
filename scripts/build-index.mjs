@@ -50,25 +50,31 @@ export function productsFromXml(xml, today = new Date().toISOString().slice(0, 1
   while ((mm = re.exec(xml))) {
     const e = parseXml('<SHOPITEM>' + mm[1] + '</SHOPITEM>').c[0];
     if (!e) continue;
-    if (at(e, 'VISIBILITY') !== 'visible' || at(e, 'VISIBLE') !== '1') continue;
+    // produkty s variantmi majú kód, cenu, sklad a viditeľnosť len pri jednotlivých variantoch
+    const V = kids(kid(e, 'VARIANTS'), 'VARIANT').filter((v) => at(v, 'VISIBLE') !== '0');
+    if (at(e, 'VISIBILITY') !== 'visible') continue;
+    if (V.length ? false : at(e, 'VISIBLE') !== '1') continue;
+    if (!V.length && kid(e, 'VARIANTS')) continue;
     const name = at(e, 'NAME'), url = at(e, 'ORIG_URL');
     if (!name || !url) continue;
     let price = +at(e, 'PRICE_VAT') || 0, std = +at(e, 'STANDARD_PRICE') || 0;
     const act = +at(e, 'ACTION_PRICE') || 0, af = at(e, 'ACTION_PRICE_FROM'), au = at(e, 'ACTION_PRICE_UNTIL');
     let stock = +at(e, 'STOCK', 'AMOUNT') || 0, from = false, avail = at(e, 'AVAILABILITY_OUT_OF_STOCK');
-    const V = kids(kid(e, 'VARIANTS'), 'VARIANT');
+    let old = 0, until = '';
     if (V.length) {
-      stock = 0; let mp = Infinity, ms = 0; const prices = new Set();
+      // najnižšia cena zo všetkých variantov (aj s akciou pri variante)
+      stock = 0; let mp = Infinity, mo = 0, mu = ''; const prices = new Set();
       for (const v of V) {
-        const vp = +at(v, 'PRICE_VAT') || 0, vs = +at(v, 'STOCK', 'AMOUNT') || 0;
-        stock += Math.max(0, vs); prices.add(vp);
-        if (vp && vp < mp) { mp = vp; ms = +at(v, 'STANDARD_PRICE') || 0; }
+        let vp = +at(v, 'PRICE_VAT') || 0, vo = +at(v, 'STANDARD_PRICE') || 0, vu = '';
+        const va = +at(v, 'ACTION_PRICE') || 0, vaf = at(v, 'ACTION_PRICE_FROM'), vau = at(v, 'ACTION_PRICE_UNTIL');
+        if (va && va < vp && (!vaf || vaf <= today) && (!vau || vau >= today)) { vo = vp; vp = va; vu = vau; }
+        const vs = +at(v, 'STOCK', 'AMOUNT') || 0;
+        stock += Math.max(0, vs); if (vp) prices.add(vp);
+        if (vp && vp < mp) { mp = vp; mo = vo > vp ? vo : 0; mu = vu; }
         if (!avail) avail = at(v, 'AVAILABILITY_OUT_OF_STOCK');
       }
-      if (mp < Infinity) { price = mp; std = ms; from = prices.size > 1; }
-    }
-    let old = 0, until = '';
-    if (act && act < price && (!af || af <= today) && (!au || au >= today)) { old = price; price = act; until = au; }
+      if (mp < Infinity) { price = mp; old = mo; until = mu; from = prices.size > 1; }
+    } else if (act && act < price && (!af || af <= today) && (!au || au >= today)) { old = price; price = act; until = au; }
     else if (std > price) old = std;
     const flags = kids(kid(e, 'FLAGS'), 'FLAG').filter((f) => at(f, 'ACTIVE') === '1').map((f) => at(f, 'CODE'));
     const clean = (t) => { const seg = t.replace(/>>/g, '>').split('>').map((x) => x.trim()).filter(Boolean); if (seg.length > 1) seg.shift(); return seg.join(' > '); };
@@ -87,12 +93,13 @@ export function productsFromXml(xml, today = new Date().toISOString().slice(0, 1
     }
     const sd = at(e, 'SHORT_DESCRIPTION').replace(/<[^>]+>/g, ' ').replace(/&[a-z#0-9]+;/gi, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
     const o = {
-      c: at(e, 'CODE'), n: name, u: url.replace(/^https?:\/\/[^/]+/, ''), i: txt(kid(kid(e, 'IMAGES'), 'IMAGE')),
+      c: at(e, 'CODE') || (V[0] ? at(V[0], 'CODE') : ''), n: name, u: url.replace(/^https?:\/\/[^/]+/, ''), i: txt(kid(kid(e, 'IMAGES'), 'IMAGE')),
       p: price, s: stock, a: avail, m: at(e, 'MANUFACTURER'), cat: cats, dc, pr: proto.join(' | '), fl: flags
     };
-    const ean = at(e, 'EAN'); if (ean) o.ean = ean;
+    const ean = at(e, 'EAN') || V.map((v) => at(v, 'EAN')).filter(Boolean).join(' '); if (ean) o.ean = ean;
     if (old) o.o = old;
     if (from) o.f = 1;
+    if (V.length) o.v = V.length;
     if (until) o.un = until;
     const al = kids(kid(e, 'ALTERNATIVE_PRODUCTS'), 'CODE').map(txt).filter(Boolean); if (al.length) o.al = al;
     const tp = [...prm].join(' '); if (tp) o.tp = tp;
