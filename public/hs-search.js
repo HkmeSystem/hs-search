@@ -584,7 +584,7 @@
       '<div class="hss-body">' + (fl ? '<div>' + fl + '</div>' : '') +
       '<a class="hss-name" href="' + esc(p.u) + '">' + hl(p.n, pq) + '</a>' +
       '<div class="hss-meta">' + availHtml(p) + tags + '</div>' + alt + '</div>' +
-      '<div class="hss-price">' + priceHtml(p) + (p.ok && !p.f && canCart() ? '<div><button type="button" class="hss-cart" data-c="' + esc(p.c) + '">' + T.cart + '</button></div>' : '') + '</div></div>';
+      '<div class="hss-price">' + priceHtml(p) + (p.ok && !p.f && !p.v && canCart() ? '<div><button type="button" class="hss-cart" data-c="' + esc(p.c) + '">' + T.cart + '</button></div>' : '') + '</div></div>';
   }
   function karlikHtml() {
     return '<div class="hss-karlik"><div><div class="hss-h" style="margin:0 0 4px">' + T.karTitle + '</div><div class="hss-note" style="margin:0">' + T.karText + '</div></div><div class="hss-chips" style="margin:8px 0 0">' +
@@ -704,7 +704,7 @@
       '<a class="hsp-name" href="' + esc(p.u) + '">' + hl(p.n, pq) + '</a>' +
       '<div class="hss-meta">' + availHtml(p) + tags + '</div>' + alt +
       '<div class="hsp-bot"><div class="hss-price">' + priceHtml(p) + '</div>' +
-      (p.ok && !p.f && canCart() ? '<button type="button" class="hss-cart" data-c="' + esc(p.c) + '">' + T.cart + '</button>' : '<a class="hsp-detail" href="' + esc(p.u) + '">' + T.detail + '</a>') + '</div></div>';
+      (p.ok && !p.f && !p.v && canCart() ? '<button type="button" class="hss-cart" data-c="' + esc(p.c) + '">' + T.cart + '</button>' : '<a class="hsp-detail" href="' + esc(p.u) + '">' + T.detail + '</a>') + '</div></div>';
   }
   function renderPage() {
     if (!PG.root || !IX) return;
