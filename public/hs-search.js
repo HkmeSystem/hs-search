@@ -1,4 +1,4 @@
-/* HomeSystem.sk – nové vyhľadávanie v1.1 (SK/CS/EN) | index: index.json, index-cs.json, index-en.json vedľa tohto súboru */
+/* HomeSystem.sk – nové vyhľadávanie v1.2 (SK/CS/EN) · v1.2 (15. 11. 2026): pri nedostupnom produkte ponuka odbaleného kusu skladom (rovnaký EAN); presná zhoda v názve má prednosť aj pri nedostupnom produkte; odbalený kus hneď za novým (rovnaký EAN) | index: index.json, index-cs.json, index-en.json vedľa tohto súboru */
 (function () {
   'use strict';
   if (window.__HSS_LOADED) return;
@@ -17,7 +17,7 @@
       partial: 'Presnú zhodu sme nenašli, toto sú najbližšie výsledky.', none1: 'Pre „', none2: '“ sme nenašli žiadny produkt. Skúste iné slovo alebo ', none3: 'nám napíšte', none4: ', radi poradíme.',
       cats: 'Kategórie', blog: 'Z blogu', allArts: 'Všetky články', guides: 'Návody a články', products: 'Produkty', stock: 'Skladom', pcs: 'ks', central: 'Centrálny sklad', unavail: 'Nedostupné',
       tip: 'Odporúčame', isNew: 'Novinka', saleToday: 'Zľava končí dnes', saleDays: function (d) { return 'Zľava ešte ' + d + ' dni'; }, from: 'od ', homey: 'Funguje s Homey', fibaro: 'Funguje s FIBAROM',
-      similar: 'Skladom je podobný:', 'for': 'za', cart: 'Do košíka', added: 'Pridané',
+      unbx: 'Skladom je aj', unbxL: 'odbalený kus', similar: 'Skladom je podobný:', 'for': 'za', cart: 'Do košíka', added: 'Pridané',
       zigHint: 'Zigbee zariadenia potrebujú na fungovanie bránu (hub).', zwHint: 'Z-Wave zariadenia sa pripájajú cez centrálnu jednotku, napríklad Homey alebo FIBARO Home Center.',
       ifNot: ' Ak ju ešte nemáte, ', seeHubs: 'pozrite si riadiace jednotky', zigQ: 'zigbee brána', zwQ: 'zwave centrálna jednotka',
       karTitle: 'Vypínače a zásuvky Karlik', karText: 'Kompletný sortiment Karlik nájdete v samostatnej kategórii.', karAll: 'Celá ponuka Karlik →',
@@ -31,7 +31,7 @@
       partial: 'Přesnou shodu jsme nenašli, toto jsou nejbližší výsledky.', none1: 'Pro „', none2: '“ jsme nenašli žádný produkt. Zkuste jiné slovo nebo ', none3: 'nám napište', none4: ', rádi poradíme.',
       cats: 'Kategorie', blog: 'Z blogu', allArts: 'Všechny články', guides: 'Návody a články', products: 'Produkty', stock: 'Skladem', pcs: 'ks', central: 'Centrální sklad', unavail: 'Nedostupné',
       tip: 'Doporučujeme', isNew: 'Novinka', saleToday: 'Sleva končí dnes', saleDays: function (d) { return 'Sleva ještě ' + d + (d <= 4 ? ' dny' : ' dní'); }, from: 'od ', homey: 'Funguje s Homey', fibaro: 'Funguje s FIBAREM',
-      similar: 'Skladem je podobný:', 'for': 'za', cart: 'Do košíku', added: 'Přidáno',
+      unbx: 'Skladem je i', unbxL: 'rozbalený kus', similar: 'Skladem je podobný:', 'for': 'za', cart: 'Do košíku', added: 'Přidáno',
       zigHint: 'Zigbee zařízení potřebují ke svému fungování bránu (hub).', zwHint: 'Z-Wave zařízení se připojují přes centrální jednotku, například Homey nebo FIBARO Home Center.',
       ifNot: ' Pokud ji ještě nemáte, ', seeHubs: 'podívejte se na řídicí jednotky', zigQ: 'zigbee brána', zwQ: 'zwave centrální jednotka',
       karTitle: 'Vypínače a zásuvky Karlik', karText: 'Kompletní sortiment Karlik najdete v samostatné kategorii.', karAll: 'Celá nabídka Karlik →',
@@ -45,7 +45,7 @@
       partial: 'No exact match found, here are the closest results.', none1: 'We couldn’t find any products for “', none2: '”. Try another word or ', none3: 'contact us', none4: ', we’re happy to help.',
       cats: 'Categories', blog: 'From the blog', allArts: 'All articles', guides: 'Guides & articles', products: 'Products', stock: 'In stock', pcs: 'pcs', central: 'Central warehouse', unavail: 'Unavailable',
       tip: 'Recommended', isNew: 'New', saleToday: 'Sale ends today', saleDays: function (d) { return 'Sale ends in ' + d + ' days'; }, from: 'from ', homey: 'Works with Homey', fibaro: 'Works with FIBARO',
-      similar: 'Similar item in stock:', 'for': 'for', cart: 'Add to cart', added: 'Added',
+      unbx: 'In stock:', unbxL: 'unboxed item', similar: 'Similar item in stock:', 'for': 'for', cart: 'Add to cart', added: 'Added',
       zigHint: 'Zigbee devices need a gateway (hub) to work.', zwHint: 'Z-Wave devices connect through a controller, such as Homey or FIBARO Home Center.',
       ifNot: ' If you don’t have one yet, ', seeHubs: 'see our controllers', zigQ: 'zigbee gateway', zwQ: 'zwave controller',
       karTitle: 'Karlik switches and sockets', karText: 'You’ll find the full Karlik range in a separate category.', karAll: 'All Karlik products →',
@@ -231,7 +231,12 @@
       p.tm.forEach(function (t) { if (t.length >= 3) brands.add(t); });
       byCode.set(p.c, p); byUrl.set(p.u, p);
     });
-    return { P: P, vocab: Array.from(vocab), vx: Array.from(vx), brands: brands, byCode: byCode, byUrl: byUrl };
+    var baz = new Map();
+    P.forEach(function (p) {
+      if (!p.ok || !p.ean || !jeBazar(p)) return;
+      String(p.ean).split(' ').forEach(function (e) { if (!e) return; if (!baz.has(e)) baz.set(e, []); baz.get(e).push(p); });
+    });
+    return { P: P, baz: baz, vocab: Array.from(vocab), vx: Array.from(vx), brands: brands, byCode: byCode, byUrl: byUrl };
   }
 
   /* ---------- query understanding ---------- */
@@ -304,21 +309,50 @@
         !pq.terms.some(function (t) { return t.alts.some(function (x) { return ACC.test(x); }); })) b -= 3;
     return b;
   }
+  /* v1.2: slová presne tak, ako ich zákazník napísal (bez synoným skupín) – zhoda v názve má prednosť,
+     aj keď produkt nie je skladom (napr. „homey bridge“ → Homey Bridge, nie iná brána skladom) */
+  function jeBazar(p) { return !!(p.bz || /-BAZAR\d*$/i.test(p.c || '') || /^\s*(odbalen|rozbalen|unboxed|open[- ]box)/i.test(p.n || '')); }
+  function litBoost(p, lit, qs) {
+    if (!lit.length) return 0;
+    var hit = lit.filter(function (w) { return p.tn.some(function (t) { return t.indexOf(w) === 0 || (t.length >= 4 && w.indexOf(t) === 0); }); }).length, b = 0;
+    if (hit === lit.length) {
+      b += 6;
+      if ((' ' + spaced(p.n) + ' ').indexOf(' ' + qs + ' ') >= 0) b += 2;
+      if (!p.ok && /nedostup|vypredan|vyprodan|unavailable|sold out|out of stock/.test(norm(p.a))) b += 1.5;
+    } else if (lit.length > 1 && hit) b += 2 * hit / lit.length;
+    if (jeBazar(p)) b -= 1;
+    return b;
+  }
+  /* odbalený kus (rovnaký EAN) ide hneď za nový produkt, ak je nový vo výsledkoch */
+  function eanSpolu(a, b) { if (!a.ean || !b.ean) return false; var x = String(b.ean).split(' '); return String(a.ean).split(' ').some(function (e) { return e && x.indexOf(e) >= 0; }); }
+  function dvojice(res) {
+    var out = [], used = [];
+    var daj = function (x) { if (used.indexOf(x) < 0) { out.push(x); used.push(x); } };
+    res.forEach(function (x) {
+      if (used.indexOf(x) >= 0) return;
+      /* odbalený pred novým: posunie sa nižšie, hneď za nový (nový sa nevyťahuje hore) */
+      if (jeBazar(x.p) && res.some(function (y) { return !jeBazar(y.p) && used.indexOf(y) < 0 && eanSpolu(y.p, x.p); })) return;
+      daj(x);
+      if (!jeBazar(x.p)) res.forEach(function (y) { if (jeBazar(y.p) && eanSpolu(x.p, y.p)) daj(y); });
+    });
+    return out;
+  }
   function search(q) {
     var pq = parse(q), full = [], part = [];
     if (!pq.terms.length) return { pq: pq, res: [] };
     var req = pq.terms.filter(function (t) { return !t.soft; });
+    var lit = spaced(q).split(' ').filter(function (w) { return w.length >= 2 && !STOP.has(w); }), qs = lit.join(' ');
     IX.P.forEach(function (p) {
       var sc = 0, miss = 0;
       pq.terms.forEach(function (t) { var s = termScore(p, t); if (!s && !t.soft) miss++; sc += s; });
       if (!sc) return;
-      if (!miss) full.push({ p: p, s: sc + boost(p, pq) });
-      else if (miss === 1 && req.length >= 2) part.push({ p: p, s: sc + boost(p, pq) - 4, partial: true });
+      if (!miss) full.push({ p: p, s: sc + boost(p, pq) + litBoost(p, lit, qs) });
+      else if (miss === 1 && req.length >= 2) part.push({ p: p, s: sc + boost(p, pq) + litBoost(p, lit, qs) - 4, partial: true });
     });
     var by = function (x, y) { return y.s - x.s; };
     full.sort(by);
     if (full.length < 4) { part.sort(by); full = full.concat(part.slice(0, 16)); }
-    return { pq: pq, res: full };
+    return { pq: pq, res: dvojice(full) };
   }
   function searchArticles(pq) {
     if (!ART || !pq.terms.length) return [];
@@ -568,15 +602,25 @@
     if (PL) return '<span data-pu="' + esc(p.u) + '" data-pm="1">' + priceInner(p.u, true) + '</span>';
     return money(p.p * RATIO) + (RATIO === 1 && p.o ? ' <span class="hss-old" style="display:inline">' + money(p.o) + '</span>' : '');
   }
+  /* v1.2: nedostupný produkt → odbalený kus skladom s rovnakým EAN (najlacnejší) */
+  function odbalenyKus(p) {
+    if (p.ok || !p.ean || !IX.baz || jeBazar(p)) return null;
+    var best = null;
+    String(p.ean).split(' ').forEach(function (e) { (IX.baz.get(e) || []).forEach(function (q) { if (!best || q.p < best.p) best = q; }); });
+    return best;
+  }
+  function altHtml(p, cena) {
+    var b = odbalenyKus(p);
+    if (b) return '<div class="hss-alt hss-alt-baz">' + T.unbx + ' <a href="' + esc(b.u) + '">' + T.unbxL + '</a>' + (cena && !PL ? ' ' + T['for'] + ' ' + money(b.p * RATIO) : '') + '</div>';
+    if (!p.ok && p.al.length) for (var k = 0; k < p.al.length; k++) {
+      var a = IX.byCode.get(p.al[k]);
+      if (a && a.ok) return '<div class="hss-alt">' + T.similar + ' <a href="' + esc(a.u) + '">' + esc(a.n) + '</a>' + (cena && !PL ? ' ' + T['for'] + ' ' + money(a.p * RATIO) : '') + '</div>';
+    }
+    return '';
+  }
   function canCart() { return !!(window.shoptet && shoptet.cartShared && typeof shoptet.cartShared.addToCart === 'function'); }
   function row(p, pq, i) {
-    var fl = flagHtml(p), alt = '';
-    if (!p.ok && p.al.length) {
-      for (var k = 0; k < p.al.length; k++) {
-        var a = IX.byCode.get(p.al[k]);
-        if (a && a.ok) { alt = '<div class="hss-alt">' + T.similar + ' <a href="' + esc(a.u) + '">' + esc(a.n) + '</a>' + (PL ? '' : ' ' + T['for'] + ' ' + money(a.p * RATIO)) + '</div>'; break; }
-      }
-    }
+    var fl = flagHtml(p), alt = altHtml(p, true);
     var tags = p.proto.slice(0, 3).map(function (x) { return '<span class="hss-tag">' + x + '</span>'; }).join('') +
       (p.fl.indexOf('custom3') >= 0 ? '<span class="hss-tag">' + T.homey + '</span>' : '') +
       (p.fl.indexOf('custom1') >= 0 ? '<span class="hss-tag">' + T.fibaro + '</span>' : '');
@@ -696,7 +740,7 @@
   }
   function card(p, pq, i) {
     var alt = '';
-    if (!p.ok && p.al.length) for (var k = 0; k < p.al.length; k++) { var a = IX.byCode.get(p.al[k]); if (a && a.ok) { alt = '<div class="hss-alt">' + T.similar + ' <a href="' + esc(a.u) + '">' + esc(a.n) + '</a></div>'; break; } }
+    alt = altHtml(p, false);
     var tags = p.proto.slice(0, 2).map(function (x) { return '<span class="hss-tag">' + x + '</span>'; }).join('') +
       (p.fl.indexOf('custom3') >= 0 ? '<span class="hss-tag">' + T.homey + '</span>' : '') + (p.fl.indexOf('custom1') >= 0 ? '<span class="hss-tag">' + T.fibaro + '</span>' : '');
     return '<div class="hsp-card" data-i="' + (i || 0) + '" data-u="' + esc(p.u) + '"><div class="hsp-flags">' + flagHtml(p) + '</div>' +
