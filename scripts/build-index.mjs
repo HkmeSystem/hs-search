@@ -96,6 +96,8 @@ export function productsFromXml(xml, today = new Date().toISOString().slice(0, 1
       c: at(e, 'CODE') || (V[0] ? at(V[0], 'CODE') : ''), n: name, u: url.replace(/^https?:\/\/[^/]+/, ''), i: txt(kid(kid(e, 'IMAGES'), 'IMAGE')),
       p: price, s: stock, a: avail, m: at(e, 'MANUFACTURER'), cat: cats, dc, pr: proto.join(' | '), fl: flags
     };
+    // v1.2: odbalený / bazárový kus (Shoptet Typ položky = Bazar, alebo kód …-BAZAR, názov „Odbalené …“)
+    if (/^baza/i.test(at(e, 'ITEM_TYPE')) || /-BAZAR\d*$/i.test(o.c) || /^\s*(odbalen|rozbalen|unboxed|open[- ]box)/i.test(name)) o.bz = 1;
     const ean = at(e, 'EAN') || V.map((v) => at(v, 'EAN')).filter(Boolean).join(' '); if (ean) o.ean = ean;
     if (old) o.o = old;
     if (from) o.f = 1;
@@ -110,7 +112,7 @@ export function productsFromXml(xml, today = new Date().toISOString().slice(0, 1
 }
 
 /* ---------- pomocné stiahnutie ---------- */
-const UA = 'HomeSystem-search-index/1.1';
+const UA = 'HomeSystem-search-index/1.2';
 const label = (url) => url === EXPORT_URL ? 'export' : url.replace(/[?#].*$/, '');
 async function get(url, tries = 3, headers = {}) {
   for (let t = 1; ; t++) {
@@ -259,6 +261,17 @@ async function buildLang(L, sitemap, smap, base, prev) {
     all: kAll || (L.prefix + '/vypinace_karlik/'),
     series: series.length ? series : (L.code === 'sk' ? [['DECO', '/deco/'], ['ICON', '/icon/'], ['MINI', '/vypinace-karlik-mini/']] : [])
   };
+
+  // v1.2: bazar.json – nový produkt (kód) → odbalené kusy s rovnakým EAN, skladom a lacnejšie (pre hs-produkt.js v8)
+  const poEan = new Map(), bazar = {};
+  for (const p of products) if (p.bz && p.ean && p.s > 0) for (const e of p.ean.split(/\s+/)) { if (!poEan.has(e)) poEan.set(e, []); poEan.get(e).push({ u: p.u, p: p.p, s: p.s }); }
+  for (const p of products) {
+    if (p.bz || !p.ean) continue;
+    const k = [...new Set(p.ean.split(/\s+/).flatMap((e) => poEan.get(e) || []))].filter((b) => b.p < p.p).sort((a, b) => a.p - b.p);
+    if (k.length) bazar[p.c] = { np: p.p, k };
+  }
+  writeFileSync(OUT + '/' + L.file.replace('index', 'bazar'), JSON.stringify({ v: new Date().toISOString(), m: bazar }));
+  console.log(L.code + ': odbalené kusy pri', Object.keys(bazar).length, 'produktoch');
 
   const index = { v: new Date().toISOString(), lang: L.code, p: products, a: articles, n: news, c: catLinks, h: hubs, k: karlik, ct: contact };
   const json = JSON.stringify(index);
