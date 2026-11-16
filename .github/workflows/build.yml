@@ -29,6 +29,26 @@ jobs:
         env:
           EXPORT_URL: ${{ secrets.EXPORT_URL }}
         run: node scripts/build-index.mjs
+      # v1.3: história cien do vetvy „ceny“ (najnižšia cena za 30 dní). Chyba tu nezastaví index.
+      - name: Uloženie histórie cien (vetva ceny)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          REMOTE="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$REMOTE" ceny >/dev/null 2>&1; then
+            git clone -q --depth 1 --branch ceny "$REMOTE" ceny-data
+          else
+            mkdir ceny-data && git -C ceny-data init -q -b ceny && git -C ceny-data remote add origin "$REMOTE"
+          fi
+          node scripts/ceny.mjs
+          cd ceny-data
+          git add -A
+          if git diff --cached --quiet; then echo "Ceny bez zmeny"; exit 0; fi
+          git commit -q -m "ceny $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -q origin ceny
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
