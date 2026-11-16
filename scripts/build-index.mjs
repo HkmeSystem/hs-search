@@ -1,5 +1,7 @@
 // Zostaví index pre vyhľadávanie HomeSystem.sk z XML exportu Shoptetu.
 // Spúšťa ho GitHub Actions každých 15 minút. Odkaz na export je v tajomstve EXPORT_URL.
+// v1.3 (17. 11. 2026): navyše uloží aktuálne ceny všetkých kódov (aj variantov) do ceny-snap/<jazyk>.json
+//   pre históriu cien (scripts/ceny.mjs → vetva „ceny“, najnižšia cena za 30 dní).
 import { writeFileSync, mkdirSync } from 'node:fs';
 
 const EXPORT_URL = process.env.EXPORT_URL;
@@ -111,8 +113,27 @@ export function productsFromXml(xml, today = new Date().toISOString().slice(0, 1
   return { products: out, extCount: ext.length };
 }
 
+/* ---------- v1.3: ceny pre históriu (každý kód produktu aj varianty, aj skryté) ---------- */
+// výstup: { kód: [cena s DPH, štandardná, akčná, akcia od, akcia do, viditeľný 1/0] }
+export function pricesFromXml(xml) {
+  const out = {};
+  const re = /<SHOPITEM(?:\s[^>]*)?>([\s\S]*?)<\/SHOPITEM>/g;
+  let mm;
+  while ((mm = re.exec(xml))) {
+    const e = parseXml('<SHOPITEM>' + mm[1] + '</SHOPITEM>').c[0];
+    if (!e) continue;
+    const vis = at(e, 'VISIBILITY') === 'visible';
+    const row = (n, v) => [+at(n, 'PRICE_VAT') || 0, +at(n, 'STANDARD_PRICE') || 0, +at(n, 'ACTION_PRICE') || 0,
+      at(n, 'ACTION_PRICE_FROM'), at(n, 'ACTION_PRICE_UNTIL'), v ? 1 : 0];
+    const V = kids(kid(e, 'VARIANTS'), 'VARIANT');
+    if (V.length) { for (const v of V) { const c = at(v, 'CODE'); if (c) out[c] = row(v, vis && at(v, 'VISIBLE') !== '0'); } }
+    else { const c = at(e, 'CODE'); if (c) out[c] = row(e, vis && at(e, 'VISIBLE') !== '0'); }
+  }
+  return out;
+}
+
 /* ---------- pomocné stiahnutie ---------- */
-const UA = 'HomeSystem-search-index/1.2';
+const UA = 'HomeSystem-search-index/1.3';
 const label = (url) => url === EXPORT_URL ? 'export' : url.replace(/[?#].*$/, '');
 async function get(url, tries = 3, headers = {}) {
   for (let t = 1; ; t++) {
@@ -179,6 +200,11 @@ async function buildLang(L, sitemap, smap, base, prev) {
   const headers = await langSession(L.code);
   const xml = await get(EXPORT_URL, 3, headers);
   const { products } = productsFromXml(xml);
+  if (L.code !== 'en') {
+    // v1.3: snímka cien pre históriu (chyba tu nesmie zastaviť index)
+    try { mkdirSync('ceny-snap', { recursive: true }); const pr = pricesFromXml(xml); writeFileSync('ceny-snap/' + L.code + '.json', JSON.stringify(pr)); console.log(L.code + ': ceny', Object.keys(pr).length, 'kódov'); }
+    catch (err) { console.log('::warning::' + L.code + ': ceny sa neuložili – ' + err.message); }
+  }
   if (products.length < 100) throw new Error(L.code + ': podozrivo málo produktov (' + products.length + ')');
   const wrong = products.filter((p) => L.prefix ? !p.u.startsWith(L.prefix + '/') : /^\/(cs|en)\//.test(p.u)).length;
   if (wrong > products.length * 0.1) throw new Error(L.code + ': export neprišiel v správnom jazyku (' + wrong + ' adries nesedí)');
