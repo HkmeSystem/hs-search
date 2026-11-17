@@ -1,6 +1,7 @@
-/* HomeSystem – Vývoj ceny (hs-ceny.js v1 · 17. 11. 2026 · SK/CZ/EN)
+/* HomeSystem – Vývoj ceny (hs-ceny.js v2 · 17. 11. 2026 · SK/CZ/EN)
    Hostované na GitHub Pages (repozitár hs-search, priečinok public), načítané v Pätičke s defer:
-   <script src="https://hkmesystem.github.io/hs-search/hs-ceny.js?v=1" defer></script>
+   <script src="https://hkmesystem.github.io/hs-search/hs-ceny.js?v=2" defer></script>
+   v2: odkaz ako karta s malým grafom (návrh C), pri Kč graf v EUR s poznámkou, B2B (html.hs-vo) vypnuté.
    Čo robí (len detail produktu, len pri mene EUR):
    1) pod rámček ceny pridá odkaz „Vývoj ceny“ → karta s grafom ceny za posledných 90 dní,
    2) graf kreslí len zo skutočne zaznamenaných cien (história sa zbiera od 17. 11. 2026,
@@ -23,12 +24,15 @@
   var T = ({
     sk: { vyvoj: 'Vývoj ceny', nadpis: 'Vývoj ceny', za: 'za posledných', dni: 'dní', dnes: 'Dnes', min: 'Najnižšia', max: 'Najvyššia',
       min30: 'Najnižšia cena za 30 dní pred zľavou', od: 'Ceny zaznamenávame od', zavriet: 'Zavrieť',
+      pod: 'Ako sa menila cena za posledných 90 dní', mena: 'Ceny sú v eurách. V Kč ich prepočítavame podľa aktuálneho kurzu banky.',
       info: 'Zľavu počítame z najnižšej ceny, za ktorú sme produkt predávali 30 dní pred zľavou (§ 7 zákona č. 108/2024 Z. z.).' },
     cs: { vyvoj: 'Vývoj ceny', nadpis: 'Vývoj ceny', za: 'za posledních', dni: 'dní', dnes: 'Dnes', min: 'Nejnižší', max: 'Nejvyšší',
       min30: 'Nejnižší cena za 30 dní před slevou', od: 'Ceny zaznamenáváme od', zavriet: 'Zavřít',
+      pod: 'Jak se měnila cena za posledních 90 dní', mena: 'Ceny jsou v eurech. Do Kč je přepočítáváme podle aktuálního kurzu banky.',
       info: 'Slevu počítáme z nejnižší ceny, za kterou jsme produkt prodávali 30 dní před slevou.' },
     en: { vyvoj: 'Price history', nadpis: 'Price history', za: 'last', dni: 'days', dnes: 'Today', min: 'Lowest', max: 'Highest',
       min30: 'Lowest price in the 30 days before the discount', od: 'Prices recorded since', zavriet: 'Close',
+      pod: 'How the price changed over the last 90 days', mena: 'Prices are in EUR; CZK prices are converted at the current bank rate.',
       info: 'The discount is calculated from the lowest price in the 30 days before the discount.' }
   })[L] || {};
 
@@ -53,9 +57,17 @@
     s.textContent = [
       'html.hs-ceny-min30 .p-detail .p-final-price-wrapper{--hs-bezna-cena:"' + T.min30 + ' "}',
       'html.hs-ceny-min30 .p-detail .p-final-price-wrapper .price-standard{white-space:normal!important;line-height:18px}',
-      '.hs-cv-btn{display:inline-flex;align-items:center;gap:6px;margin:8px 0 0;padding:0;border:0;background:none;color:#1272b3;font:600 14px/20px "Source Sans 3",sans-serif;cursor:pointer}',
-      '.hs-cv-btn:hover{text-decoration:underline}',
-      '.hs-cv-btn svg{flex:none}',
+      '.hs-cv-btn{display:flex;align-items:center;gap:12px;box-sizing:border-box;width:100%;margin:-4px 0 14px;padding:8px 14px;border:2px solid #e3eef7;border-radius:12px;background:#fff;cursor:pointer;text-align:left;font:inherit;color:inherit}',
+      '.hs-cv-btn:hover,.hs-cv-btn[aria-expanded="true"]{border-color:#239ceb}',
+      '.hs-cv-btn:focus-visible{outline:2px solid #1272b3;outline-offset:2px}',
+      '.hs-cv-btn .sp{flex:none;display:block}',
+      '.hs-cv-btn .t{flex:1;min-width:0}',
+      '.hs-cv-btn b{display:block;color:#1f1f1f;font:700 15px/20px "Exo 2",sans-serif}',
+      '.hs-cv-btn small{display:block;color:#4d4d4d;font:13px/18px "Source Sans 3",sans-serif}',
+      '.hs-cv-btn .sh{flex:none;color:#1272b3;font:700 22px/1 "Exo 2",sans-serif;transition:transform .2s}',
+      '.hs-cv-btn[aria-expanded="true"] .sh{transform:rotate(90deg)}',
+      '.hs-cv-btn + .hs-cv{margin-top:-6px}',
+      'html.hs-vo .hs-cv-btn,html.hs-vo .hs-cv{display:none!important}',
       '.hs-cv{margin:10px 0 14px;padding:14px 16px 12px;border:1px solid #e3eef7;border-radius:12px;background:#fff;box-shadow:0 1px 2px rgba(18,114,179,.06)}',
       '.hs-cv-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 8px}',
       '.hs-cv-h strong{font:700 16px/22px "Exo 2",sans-serif;color:#1f1f1f}',
@@ -121,7 +133,7 @@
     return { svg: g, X: X, W: W, L: Lx, R: R };
   }
 
-  function panel(h, ref, kam) {
+  function panel(h, ref, kam, eur) {
     var old = document.querySelector('.hs-cv'); if (old) { old.remove(); return; }
     var b = body(h), gr = graf(b, ref);
     var ps = b.map(function (x) { return x.p; });
@@ -134,9 +146,10 @@
       (ref ? '<span><i></i>' + T.min30 + ' <b>' + fmt(ref) + '</b></span>' : '') +
       (mn !== mx ? '<span>' + T.min + ' <b>' + fmt(mn) + '</b></span><span>' + T.max + ' <b>' + fmt(mx) + '</b></span>' : '') + '</div>' +
       (ref ? '<div class="hs-cv-info">' + T.info + '</div>' : '') +
-      (toD(h[0][0]) > new Date(dnes - CFG.dni * DEN) ? '<div class="hs-cv-od">' + T.od + ' ' + d2s(toD(h[0][0])) + ' ' + toD(h[0][0]).getFullYear() + '.</div>' : '');
+      (toD(h[0][0]) > new Date(dnes - CFG.dni * DEN) ? '<div class="hs-cv-od">' + T.od + ' ' + d2s(toD(h[0][0])) + ' ' + toD(h[0][0]).getFullYear() + '.</div>' : '') +
+      (eur === false ? '<div class="hs-cv-od">' + T.mena + '</div>' : '');
     kam.insertAdjacentElement('afterend', el);
-    el.querySelector('.hs-cv-x').onclick = function () { el.remove(); };
+    el.querySelector('.hs-cv-x').onclick = function () { el.remove(); kam.setAttribute('aria-expanded', 'false'); kam.focus(); };
     var svg = el.querySelector('svg'), tip = el.querySelector('.hs-cv-tip'), cur = el.querySelector('.hs-cv-cur');
     var ukaz = function (ev) {
       var r = svg.getBoundingClientRect(), cx = (ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left;
@@ -152,12 +165,27 @@
     svg.addEventListener('mouseleave', skry); svg.addEventListener('touchend', function () { setTimeout(skry, 1500); });
   }
 
+  /* ---------- malý graf v karte (rovnaké dáta, bez osí) ---------- */
+  function mini(h) {
+    var b = body(h), W = 72, H = 28, P = 5;
+    var ps = b.map(function (x) { return x.p; }), mn = Math.min.apply(null, ps), mx = Math.max.apply(null, ps);
+    var X = function (i) { return P + (W - 2 * P) * i / (b.length - 1); };
+    var Y = function (p) { return mx === mn ? H / 2 : P + (H - 2 * P) * (1 - (p - mn) / (mx - mn)); };
+    var d = 'M' + X(0) + ' ' + Y(b[0].p);
+    for (var i = 1; i < b.length; i++) d += 'H' + X(i) + 'V' + Y(b[i].p);
+    var n = b.length - 1;
+    return '<svg class="sp" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">' +
+      '<path d="' + d + '" fill="none" stroke="#1272b3" stroke-width="2.5" stroke-linejoin="round"/>' +
+      '<circle cx="' + X(n) + '" cy="' + Y(b[n].p) + '" r="3.5" fill="#ffc807" stroke="#1f1f1f" stroke-width="1.2"/></svg>';
+  }
+
   /* ---------- detail produktu ---------- */
   function start() {
     var w = document.querySelector('.p-detail .p-final-price-wrapper'); if (!w) return;
     var dl = (window.dataLayer || []).filter(function (x) { return x && x.shoptet && x.shoptet.product; })[0];
     var pr = dl && dl.shoptet.product; if (!pr) return;
-    if ((pr.currency || dl.shoptet.currency || 'EUR') !== 'EUR') return;   // história je v EUR
+    if (document.documentElement.classList.contains('hs-vo')) return;    // B2B: bez grafu (§ 7 platí pre spotrebiteľov)
+    var eur = (pr.currency || dl.shoptet.currency || 'EUR') === 'EUR';   // pri Kč graf v EUR s poznámkou
     css();
     if (poPrechode) document.documentElement.classList.add('hs-ceny-min30');
     var codes = pr.code ? [pr.code] : (pr.codes || []).map(function (c) { return c.code; });
@@ -171,10 +199,15 @@
       if (!code || document.querySelector('.hs-cv-btn')) return;
       var h = data[code];
       var ref = poPrechode && w.querySelector('.price-standard') ? cena(w.querySelector('.price-standard .default-variant') || w.querySelector('.price-standard')) : 0;
-      var b = document.createElement('button'); b.type = 'button'; b.className = 'hs-cv-btn';
-      b.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>' + T.vyvoj;
+      var kratko = toD(h[0][0]) > new Date(dnes - CFG.dni * DEN);
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'hs-cv-btn'; b.setAttribute('aria-expanded', 'false');
+      b.innerHTML = mini(h) + '<span class="t"><b>' + T.vyvoj + '</b><small>' +
+        (kratko ? T.od + ' ' + d2s(toD(h[0][0])) + ' ' + toD(h[0][0]).getFullYear() : T.pod) + '</small></span><span class="sh" aria-hidden="true">›</span>';
       w.insertAdjacentElement('afterend', b);
-      b.onclick = function () { panel(h, ref || 0, b); };
+      b.onclick = function () {
+        panel(h, eur ? ref || 0 : 0, b, eur);
+        b.setAttribute('aria-expanded', document.querySelector('.hs-cv') ? 'true' : 'false');
+      };
     }).catch(function (e) { /* bez dát sa odkaz neukáže */ });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
