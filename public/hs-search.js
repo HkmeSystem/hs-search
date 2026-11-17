@@ -1,4 +1,4 @@
-/* HomeSystem.sk – nové vyhľadávanie v1.3 (SK/CS/EN) · v1.3 (17. 11. 2026): kódy modelov bez pomlčiek (fgs224 = FGS-224, 201-p = 201P, r4 m = R4M, trvzbt = TRV-ZBT), preklepy (sonogf, shely, brdige…), anglické slová z kopírovaných názvov, voľnejšia zhoda pri dlhých názvoch s kódom modelu, presný názov (Shelly Pill) navrch, meranie až po dopísaní · v1.2 (15. 11. 2026): pri nedostupnom produkte ponuka odbaleného kusu skladom (rovnaký EAN); presná zhoda v názve má prednosť aj pri nedostupnom produkte; odbalený kus hneď za novým (rovnaký EAN) | index: index.json, index-cs.json, index-en.json vedľa tohto súboru */
+/* HomeSystem.sk – nové vyhľadávanie v1.4 (SK/CS/EN) · v1.4 (17. 11. 2026): značky – karta značky v okne (Homey → Athom), filter značiek v okne aj na stránke výsledkov, „Funguje s Homey / FIBAROM“, odkazy s ?znacka= a ?funguje= (bez hľadaného slova string=*, napr. /vyhladavanie/?string=*&funguje=homey pre e-maily) · v1.3 (17. 11. 2026): kódy modelov bez pomlčiek (fgs224 = FGS-224, 201-p = 201P, r4 m = R4M, trvzbt = TRV-ZBT), preklepy (sonogf, shely, brdige…), anglické slová z kopírovaných názvov, voľnejšia zhoda pri dlhých názvoch s kódom modelu, presný názov (Shelly Pill) navrch, meranie až po dopísaní · v1.2 (15. 11. 2026): pri nedostupnom produkte ponuka odbaleného kusu skladom (rovnaký EAN); presná zhoda v názve má prednosť aj pri nedostupnom produkte; odbalený kus hneď za novým (rovnaký EAN) | index: index.json, index-cs.json, index-en.json vedľa tohto súboru */
 (function () {
   'use strict';
   if (window.__HSS_LOADED) return;
@@ -26,6 +26,7 @@
       lookingLow: 'hľadám:', fixedLow: 'zobrazujem výsledky pre', detail: 'Detail', yourPrice: 'Vaša cena…', priceInDetail: 'Cena v detaile', searching: 'Hľadám…', blogUrl: '/blog/',
       plural: function (n) { return n === 1 ? 'produkt' : (n >= 2 && n <= 4) ? 'produkty' : 'produktov'; },
       showAll: function (n) { return (n >= 2 && n <= 4 ? 'Zobraziť všetky ' : 'Zobraziť všetkých ') + n + ' ' + this.plural(n); },
+      brand: 'Značka', brands: 'Značky vo výsledkoch', brandAll: 'Celá ponuka značky', inStockN: 'skladom', worksAll: 'Všetky produkty', brandLbl: 'Značka:', allBrands: 'Všetky značky',
       popularQ: ['senzor úniku vody', 'termostatická hlavica', 'zigbee brána', 'smart zámok', 'shelly', 'homey'] },
     cs: { recent: 'Vaše poslední hledání', popular: 'Lidé často hledají', news: 'Novinky v nabídce', sale: 'Akce, které končí', looking: 'Hledám:', fixed: 'Zobrazuji výsledky pro',
       partial: 'Přesnou shodu jsme nenašli, toto jsou nejbližší výsledky.', none1: 'Pro „', none2: '“ jsme nenašli žádný produkt. Zkuste jiné slovo nebo ', none3: 'nám napište', none4: ', rádi poradíme.',
@@ -40,6 +41,7 @@
       lookingLow: 'hledám:', fixedLow: 'zobrazuji výsledky pro', detail: 'Detail', yourPrice: 'Vaše cena…', priceInDetail: 'Cena v detailu', searching: 'Hledám…', blogUrl: '/cs/blog/',
       plural: function (n) { return n === 1 ? 'produkt' : (n >= 2 && n <= 4) ? 'produkty' : 'produktů'; },
       showAll: function (n) { return (n >= 2 && n <= 4 ? 'Zobrazit všechny ' : 'Zobrazit všech ') + n + ' ' + this.plural(n); },
+      brand: 'Značka', brands: 'Značky ve výsledcích', brandAll: 'Celá nabídka značky', inStockN: 'skladem', worksAll: 'Všechny produkty', brandLbl: 'Značka:', allBrands: 'Všechny značky',
       popularQ: ['senzor úniku vody', 'termostatická hlavice', 'zigbee brána', 'chytrý zámek', 'shelly', 'homey'] },
     en: { recent: 'Your recent searches', popular: 'Popular searches', news: 'New arrivals', sale: 'Deals ending soon', looking: 'Looking for:', fixed: 'Showing results for',
       partial: 'No exact match found, here are the closest results.', none1: 'We couldn’t find any products for “', none2: '”. Try another word or ', none3: 'contact us', none4: ', we’re happy to help.',
@@ -54,6 +56,7 @@
       lookingLow: 'looking for:', fixedLow: 'showing results for', detail: 'Details', yourPrice: 'Your price…', priceInDetail: 'Price on product page', searching: 'Searching…', blogUrl: '/en/blog/',
       plural: function (n) { return n === 1 ? 'product' : 'products'; },
       showAll: function (n) { return 'Show all ' + n + ' ' + this.plural(n); },
+      brand: 'Brand', brands: 'Brands in results', brandAll: 'All products of the brand', inStockN: 'in stock', worksAll: 'All products', brandLbl: 'Brand:', allBrands: 'All brands',
       popularQ: ['water leak sensor', 'radiator thermostat', 'zigbee gateway', 'smart lock', 'shelly', 'homey'] }
   };
   var T = TT[L], RKEY = L === 'sk' ? 'hss_recent' : 'hss_recent_' + L, HUB = null;
@@ -479,6 +482,69 @@
       if (/^kontakt/.test(t)) CONTACT = h;
     });
   }
+  /* ---------- v1.4: značky ---------- */
+  var BRALIAS = { homey: 'athom' };                 /* produktová rada → výrobca v Shoptete */
+  var BRLABEL = { athom: 'Homey (Athom)' };
+  var ECOF = { homey: 'custom3', fibaro: 'custom1' };  /* príznaky „Funguje s …“ */
+  var BRURL = null, brP = null;
+  var slug = function (s) { return norm(s).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); };
+  function loadBrands() {
+    if (brP) return brP;
+    try { var c = JSON.parse(localStorage.getItem('hss_br_' + L) || 'null'); if (c && Date.now() - c.t < 864e5) { BRURL = c.d; return (brP = Promise.resolve()); } } catch (e) {}
+    brP = fetch({ sk: '/znacka/', cs: '/cs/znacka/', en: '/en/brand/' }[L]).then(function (r) { if (!r.ok) throw new Error('brands'); return r.text(); }).then(function (h) {
+      var d = new DOMParser().parseFromString(h, 'text/html'), m = {};
+      d.querySelectorAll('#content a[href], .content-inner a[href]').forEach(function (a) {
+        var n = a.textContent.trim(), u = a.getAttribute('href').replace(/^https?:\/\/[^/]+/, '');
+        if (n && n.length < 40 && /^(\/cs|\/en)?\/[a-z0-9-]+\/$/.test(u)) m[slug(n)] = u;
+      });
+      BRURL = m; try { localStorage.setItem('hss_br_' + L, JSON.stringify({ t: Date.now(), d: m })); } catch (e) {}
+    }).catch(function () { BRURL = {}; });
+    return brP;
+  }
+  var konci = function (p) { return /predaj skoncil|prodej skoncil|sale ended|discontinued|no longer/.test(norm(p.a)); };
+  function brandMap() {
+    if (IX.bm) return IX.bm;
+    var bm = {};
+    IX.P.forEach(function (p) {
+      if (!p.m || konci(p)) return; var k = slug(p.m); if (!k) return;
+      var b = bm[k] || (bm[k] = { s: k, n: p.m, P: [], ok: 0, min: Infinity });
+      b.P.push(p); if (p.ok) { b.ok++; if (p.p && p.p < b.min) b.min = p.p; }
+    });
+    Object.keys(bm).forEach(function (k) { var b = bm[k]; if (b.min === Infinity) b.min = Math.min.apply(null, b.P.map(function (p) { return p.p || Infinity; })); });
+    return (IX.bm = bm);
+  }
+  var brandLabel = function (b) { return BRLABEL[b.s] || b.n; };
+  var brandUrl = function (b) { return (BRURL && BRURL[b.s]) || LANGS[L].search + '?string=*&znacka=' + b.s; };
+  function brandBy(x) { var bm = brandMap(); x = slug(x || ''); return bm[BRALIAS[x] || x] || null; }
+  /* značky, ktoré zákazník napísal (homey, shelly, home assistant…) */
+  function qBrands(q) {
+    var bm = brandMap(), s = ' ' + typoQ(q) + ' ', out = [];
+    var add = function (b) { if (b && b.s !== 'homesystem' && out.indexOf(b) < 0) out.push(b); };
+    Object.keys(BRALIAS).forEach(function (a) { if (s.indexOf(' ' + a + ' ') >= 0) add(bm[BRALIAS[a]]); });
+    Object.keys(bm).forEach(function (k) {
+      var w = ' ' + k.replace(/-/g, ' ') + ' ', w1 = ' ' + k.split('-')[0] + ' ';
+      if (s.indexOf(w) >= 0 || (k.split('-')[0].length >= 4 && s.indexOf(w1) >= 0)) add(bm[k]);
+    });
+    return out.slice(0, 2);
+  }
+  function ecoOf(pq) { return pq.terms.filter(function (t) { return t.eco && ECOF[t.eco]; }).map(function (t) { return t.eco; })[0] || null; }
+  var ecoLabel = function (e) { return e === 'homey' ? T.homey : T.fibaro; };
+  var ecoCount = function (e) { return IX.P.filter(function (p) { return p.fl.indexOf(ECOF[e]) >= 0 && !konci(p); }).length; };
+  function brandStat(b) { return b.P.length + ' ' + T.plural(b.P.length) + (b.ok ? ' · ' + b.ok + ' ' + T.inStockN : '') + (b.min < Infinity ? ' · ' + T.from + money(b.min) : ''); }
+  function brandCard(b) {
+    return '<a class="hss-brand" href="' + esc(brandUrl(b)) + '" data-br="' + esc(b.s) + '"><small>' + T.brand + '</small><span class="hss-brand-n">' + esc(brandLabel(b)) + '</span>' +
+      '<span class="hss-brand-s">' + brandStat(b) + '</span><span class="hss-brand-go">' + T.brandAll + ' →</span></a>';
+  }
+  function ecoCard(e) {
+    return '<a class="hss-brand hss-eco" href="' + esc(LANGS[L].search + '?string=*&funguje=' + e) + '"><span class="hss-brand-n">' + esc(ecoLabel(e)) + '</span>' +
+      '<span class="hss-brand-s">' + ecoCount(e) + ' ' + T.plural(ecoCount(e)) + '</span><span class="hss-brand-go">' + T.worksAll + ' →</span></a>';
+  }
+  /* počty značiek vo výsledkoch */
+  function brandCounts(list) {
+    var c = {}; list.forEach(function (p) { if (!p.m) return; var k = slug(p.m); if (k === 'homesystem') return; c[k] = (c[k] || 0) + 1; });
+    var bm = brandMap();
+    return Object.keys(c).sort(function (a, b) { return c[b] - c[a]; }).map(function (k) { return [bm[k], c[k]]; }).filter(function (x) { return x[0]; });
+  }
   var catLink = function (name) {
     var l = CATLINK.get(spaced(name)) || CATMAP[name]; if (l) return l;
     var a = '/' + norm(name).replace(/[^a-z0-9]/g, '-') + '/', b = '/' + norm(name).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '/';
@@ -542,6 +608,18 @@
     '.hss-side .hss-blogbox .hss-art span{color:#1f1f1f}.hss-side .hss-blogbox .hss-art small{color:#6b7680}' +
     '.hss-side .hss-blogbox .hss-art:hover span{color:#1272b3;text-decoration:none}.hss-blogbox .hss-art+.hss-art{border-top:1px solid #e3eef7}' +
     '.hss-blogall{display:inline-block;margin-top:6px;font:700 12px "Exo 2",sans-serif;text-transform:uppercase;letter-spacing:.03em;color:#1272b3!important;text-decoration:none!important}.hss-blogall:hover{text-decoration:underline!important}' +
+    '.hss-brand{display:block;margin:14px 0 6px;padding:12px 14px 11px;border-radius:10px;background:#fff;color:#1f1f1f!important;text-decoration:none!important;box-shadow:0 6px 18px rgba(4,40,70,.18)}' +
+    '.hss-brand small{display:block;font:700 11px "Exo 2",sans-serif;text-transform:uppercase;letter-spacing:.05em;color:#6b7680}' +
+    '.hss-brand-n{display:block;font:700 19px/1.2 "Exo 2",sans-serif;color:#1272b3}.hss-brand-s{display:block;font-size:13.5px;color:#4d5862;margin-top:3px}' +
+    '.hss-brand-go{display:inline-block;margin-top:8px;font:700 12px "Exo 2",sans-serif;text-transform:uppercase;letter-spacing:.03em;color:#1272b3}.hss-brand:hover .hss-brand-go{text-decoration:underline}' +
+    '.hss-eco{background:#c8f25a}.hss-eco .hss-brand-n,.hss-eco .hss-brand-go{color:#1f1f1f}.hss-eco .hss-brand-s{color:#33401a}' +
+    '.hss-bf{display:flex;width:100%;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border:0;border-bottom:1px solid rgba(255,255,255,.2);background:none;color:#fff;font:600 15px "Source Sans 3",sans-serif;text-align:left;cursor:pointer;line-height:1.25}' +
+    '.hss-bf:hover span{text-decoration:underline}.hss-bf b{flex:0 0 auto;min-width:28px;height:22px;padding:0 8px;border-radius:999px;background:rgba(255,255,255,.22);color:#fff;font:700 12px/22px "Exo 2",sans-serif;text-align:center}' +
+    '.hss-bf.on b{background:#ffc807;color:#1f1f1f}.hss-bf.on span{text-decoration:underline}' +
+    '.hsp-brand{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;padding:12px 16px;border-radius:10px;background:#eaf5fd;margin:10px 0}.hsp-brand strong{font:700 19px "Exo 2",sans-serif;color:#1272b3}' +
+    '.hsp-brand span{color:#4d5862;font-size:14px}.hsp-brand a{margin-left:auto;font:700 13px "Exo 2",sans-serif;text-transform:uppercase;letter-spacing:.03em;color:#1272b3!important;text-decoration:none!important}.hsp-brand a:hover{text-decoration:underline!important}' +
+    '.hsp-brand.eco{background:#efface}.hsp-brand.eco strong{color:#1f1f1f}' +
+    '.hsp-brands{margin:-6px 0 14px}.hsp-lbl{font:700 12px/28px "Exo 2",sans-serif;text-transform:uppercase;letter-spacing:.04em;color:#6b7680;margin-right:2px}' +
     '.hss-ovp{position:fixed;z-index:2147483646;display:block;background:transparent;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .18s ease}#hss-ov.on .hss-ovp{opacity:1;pointer-events:auto}' +
     '@media (prefers-reduced-motion:reduce){.hss-ovp{transition:none}}' +
     '@media(max-width:520px){#hss .hss-main{padding:6px 12px 14px}.hss-row{align-items:flex-start;gap:10px}.hss-img{width:48px;height:48px;flex-basis:48px}.hss-name{font-size:14.5px}.hss-meta .hss-tag:nth-of-type(n+3){display:none}.hss-price strong{font-size:15px}.hss-cart{padding:4px 9px;font-size:11px}}' +
@@ -709,10 +787,10 @@
     return h + '</div></div>';
   }
 
-  var st = { q: '', f: null, all: false, lim: 30, act: -1, list: [] };
+  var st = { q: '', f: null, b: null, all: false, lim: 30, act: -1, list: [] };
   function results() {
     var q = input.value, r = search(q), pq = r.pq;
-    var list = st.f ? r.res.filter(function (x) { return x.p.proto.indexOf(st.f) >= 0; }) : r.res;
+    var list = r.res.filter(function (x) { return (!st.f || x.p.proto.indexOf(st.f) >= 0) && (!st.b || slug(x.p.m) === st.b); });
     var shown = list.slice(0, st.all ? st.lim : C.drop);
     st.list = shown.map(function (x) { return x.p; });
     var arts = searchArticles(pq), main = '', side = '';
@@ -756,6 +834,15 @@
     var cats = Object.keys(cc).sort(function (a, b) { return cc[b] - cc[a]; });
     if (cats.length && cc[cats[0]] >= 6) cats = cats.filter(function (c) { return cc[c] >= 6; });
     cats = cats.slice(0, 4);
+    /* v1.4: karta značky (Homey → Athom) a „Funguje s Homey / FIBAROM“ */
+    var qb = qBrands(q), eco = ecoOf(pq);
+    side += qb.map(brandCard).join('');
+    if (eco && ecoCount(eco)) side += ecoCard(eco);
+    /* filter značiek vo výsledkoch – keď zákazník značku nenapísal a výsledky sú od viacerých */
+    var bc = brandCounts(r.res.map(function (x) { return x.p; }));
+    if (!qb.length && bc.length >= 2 && r.res.length > 3) side += '<div class="hss-h">' + T.brands + '</div>' + bc.slice(0, 5).map(function (x) {
+      return '<button type="button" class="hss-bf' + (st.b === x[0].s ? ' on' : '') + '" data-b="' + esc(x[0].s) + '"><span>' + esc(brandLabel(x[0])) + '</span><b>' + x[1] + '</b></button>';
+    }).join('');
     if (cats.length) side += '<div class="hss-h">' + T.cats + '</div>' + cats.map(function (c) { return '<a class="hss-cat" href="' + esc(catLink(c)) + '"><span>' + esc(c) + '</span><b>' + cn[c] + '</b></a>'; }).join('');
     if (!pq.intent && arts.length) side += '<div class="hss-blogbox"><div class="hss-h">' + T.blog + '</div>' + arts.slice(0, 2).map(artHtml).join('') + '<a class="hss-blogall" href="' + T.blogUrl + '">' + T.allArts + '</a></div>';
     track(q, r.res.length);
@@ -763,18 +850,31 @@
   }
 
   /* ---------- stránka s výsledkami (/vyhladavanie/?string=...) ---------- */
-  var PG = { q: '', f: null, stock: false, sort: 'rel', lim: 24, root: null };
+  var PG = { q: '', f: null, b: null, eco: null, stock: false, sort: 'rel', lim: 24, root: null };
+  function pageParams() {
+    try { var u = new URLSearchParams(location.search); PG.b = slug(u.get('znacka') || '') || null; PG.eco = (u.get('funguje') || '').toLowerCase(); if (!ECOF[PG.eco]) PG.eco = null; } catch (e) { PG.b = PG.eco = null; }
+    if (PG.b && BRALIAS[PG.b]) PG.b = BRALIAS[PG.b];
+  }
+  /* adresa stránky vždy zodpovedá výberu → dá sa skopírovať do e-mailu */
+  function pageUrl() {
+    var a = [];
+    a.push('string=' + (PG.q ? encodeURIComponent(PG.q) : '*'));   /* Shoptet presmeruje prázdne hľadanie na úvod – preto „*“ */
+    if (PG.b) a.push('znacka=' + encodeURIComponent(PG.b));
+    if (PG.eco) a.push('funguje=' + PG.eco);
+    return LANGS[L].search + (a.length ? '?' + a.join('&') : '');
+  }
+  function syncUrl() { try { if (location.pathname + location.search !== pageUrl()) history.replaceState(null, '', pageUrl()); } catch (e) {} }
   function plural(n) { return T.plural(n); }
   function isSearchPage() { return location.pathname.replace(/\/?$/, '/') === LANGS[L].search; }
-  function pageQuery() { try { return (new URLSearchParams(location.search).get('string') || '').trim(); } catch (e) { return ''; } }
-  function goSearch(q) {
+  function pageQuery() { try { var q = (new URLSearchParams(location.search).get('string') || '').trim(); return q === '*' ? '' : q; } catch (e) { return ''; } }
+  function goSearch(q, b) {
     q = (q || '').trim();
     if (spaced(q).length < 2) { if (input) input.focus(); return; }
     remember(q); hide();
-    var url = LANGS[L].search + '?string=' + encodeURIComponent(q);
+    var url = LANGS[L].search + '?string=' + encodeURIComponent(q) + (b ? '&znacka=' + encodeURIComponent(b) : '');
     if (isSearchPage() && PG.root) {
       history.pushState(null, '', url);
-      PG.q = q; PG.f = null; PG.lim = 24;
+      PG.q = q; PG.f = null; PG.b = b || null; PG.eco = null; PG.lim = 24;
       if (input) input.blur();
       renderPage(); window.scrollTo(0, 0);
     } else location.href = url;
@@ -809,6 +909,7 @@
     if (!PG.root || !IX) return;
     var q = PG.q, h = '';
     document.querySelectorAll('input[name="string"]').forEach(function (i) { if (document.activeElement !== i) i.value = q; });
+    if (spaced(q).length < 2 && (PG.b || PG.eco)) return renderFilterPage();
     if (spaced(q).length < 2) {
       PG.root.innerHTML = '<h1 class="hsp-title">' + T.search + '</h1><div class="hsp-sub">' + T.searchHint + '</div><div class="hss-chips">' +
         POPULAR.map(function (x) { return '<button type="button" class="hss-chip" data-q="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>';
@@ -816,7 +917,7 @@
     }
     var r = search(q), pq = r.pq, all = r.res.map(function (x) { return x.p; }), partial = r.res.length && r.res[0].partial;
     PG.shown = null;
-    var list = all.filter(function (p) { return (!PG.f || p.proto.indexOf(PG.f) >= 0) && (!PG.stock || p.ok); });
+    var list = all.filter(function (p) { return (!PG.f || p.proto.indexOf(PG.f) >= 0) && (!PG.stock || p.ok) && (!PG.b || slug(p.m) === PG.b) && (!PG.eco || p.fl.indexOf(ECOF[PG.eco]) >= 0); });
     if (PG.sort === 'asc') list = list.slice().sort(function (a, b) { return a.p - b.p; });
     if (PG.sort === 'desc') list = list.slice().sort(function (a, b) { return b.p - a.p; });
     PG.shown = list;
@@ -826,6 +927,9 @@
       (pq.fixes.length ? ' · ' + T.fixedLow + ' <strong>' + esc(pq.fixes.join(', ')) + '</strong>' : '') +
       (pq.labels.length ? ' · ' + T.lookingLow + ' <strong>' + esc(pq.labels.join(', ')) + '</strong>' : '') + '</div>';
     if (KARLIK && kStrong) h += karlikHtml();
+    var qb = qBrands(q), hb = PG.b ? brandBy(PG.b) : qb[0], eco = PG.eco || ecoOf(pq);
+    if (hb) h += '<div class="hsp-brand"><strong>' + esc(brandLabel(hb)) + '</strong><span>' + brandStat(hb) + '</span><a href="' + esc(brandUrl(hb)) + '">' + T.brandAll + ' →</a></div>';
+    if (eco && ECOF[eco]) h += '<div class="hsp-brand eco"><strong>' + esc(ecoLabel(eco)) + '</strong><span>' + ecoCount(eco) + ' ' + plural(ecoCount(eco)) + '</span><a href="' + esc(LANGS[L].search + '?string=*&funguje=' + eco) + '">' + T.worksAll + ' →</a></div>';
     if (cats.length) h += '<div class="hsp-cats">' + cats.map(function (c) { return '<a class="hsp-cat" href="' + esc(catLink(c[0])) + '">' + esc(c[0]) + ' <b>' + c[1] + '</b></a>'; }).join('') + '</div>';
     if (pq.intent && arts.length) h += '<div class="hss-h">' + T.guides + '</div><div class="hsp-arts">' + arts.slice(0, 3).map(function (a) { return '<a class="hsp-art" href="' + esc(a.u) + '"><span>' + esc(a.t) + '</span>' + (a.d ? '<small>' + esc(a.d) + '</small>' : '') + '</a>'; }).join('') + '</div>';
     if (all.length) {
@@ -834,7 +938,17 @@
       h += '<div class="hsp-bar"><div class="hss-chips" style="margin:0">' +
         '<button type="button" class="hss-chip' + (PG.stock ? ' on' : '') + '" data-stock="1">' + T.onlyStock + '</button>' +
         pk.map(function (k) { return '<button type="button" class="hss-chip' + (PG.f === k ? ' on' : '') + '" data-pf="' + k + '">' + k + ' <span style="opacity:.7">' + pc[k] + '</span></button>'; }).join('') +
+        (['homey', 'fibaro'].filter(function (e) { var n = all.filter(function (p) { return p.fl.indexOf(ECOF[e]) >= 0; }).length; return PG.eco === e || (n && n < all.length); }).map(function (e) {
+          return '<button type="button" class="hss-chip' + (PG.eco === e ? ' on' : '') + '" data-eco="' + e + '">' + esc(ecoLabel(e)) + '</button>';
+        }).join('')) +
         '</div><select class="hsp-sort" aria-label="' + T.sort + '"><option value="rel"' + (PG.sort === 'rel' ? ' selected' : '') + '>' + T.rel + '</option><option value="asc"' + (PG.sort === 'asc' ? ' selected' : '') + '>' + T.asc + '</option><option value="desc"' + (PG.sort === 'desc' ? ' selected' : '') + '>' + T.desc + '</option></select></div>';
+    }
+    if (all.length) {
+      var bcs = brandCounts(all), pbb = PG.b && brandBy(PG.b);
+      if (pbb && !bcs.some(function (x) { return x[0] === pbb; })) bcs.unshift([pbb, 0]);
+      if (bcs.length >= 2 || PG.b) h += '<div class="hss-chips hsp-brands"><span class="hsp-lbl">' + T.brandLbl + '</span>' + bcs.slice(0, 10).map(function (x) {
+        return '<button type="button" class="hss-chip' + (PG.b === x[0].s ? ' on' : '') + '" data-pb="' + esc(x[0].s) + '">' + esc(brandLabel(x[0])) + ' <span style="opacity:.7">' + x[1] + '</span></button>';
+      }).join('') + '</div>';
     }
     if (partial) h += '<div class="hss-note">' + T.partial + '</div>';
     if (!all.length && !(KARLIK && kStrong)) h += '<div class="hss-empty">' + T.none1 + esc(q) + T.none2 + '<a href="' + esc(CONTACT) + '">' + T.none3 + '</a>' + T.none4 + '</div><div class="hss-chips">' +
@@ -854,9 +968,48 @@
     PG.root.innerHTML = h;
     if (PL) livePrices(list.slice(0, PG.lim));
     document.title = T.resFor + ' ' + T.q1 + q + T.q2 + ' | HomeSystem';
+    syncUrl();
     track(q, all.length);
   }
+  /* v1.4: stránka len so značkou alebo „Funguje s …“ (bez hľadaného slova) – napr. /vyhladavanie/?funguje=homey do e-mailu */
+  function renderFilterPage() {
+    var b = PG.b ? brandBy(PG.b) : null, pq = { terms: [], labels: [], fixes: [] };
+    var all = IX.P.filter(function (p) { return (!b || slug(p.m) === b.s) && (!PG.eco || p.fl.indexOf(ECOF[PG.eco]) >= 0) && !konci(p); })
+      .sort(function (x, y) { return (y.ok - x.ok) || ((y.fl.indexOf('tip') >= 0) - (x.fl.indexOf('tip') >= 0)) || (jeBazar(x) - jeBazar(y)) || x.n.localeCompare(y.n); });
+    var list = all.filter(function (p) { return (!PG.f || p.proto.indexOf(PG.f) >= 0) && (!PG.stock || p.ok); });
+    if (PG.sort === 'asc') list = list.slice().sort(function (x, y) { return x.p - y.p; });
+    if (PG.sort === 'desc') list = list.slice().sort(function (x, y) { return y.p - x.p; });
+    PG.shown = list;
+    var title = [b ? brandLabel(b) : '', PG.eco ? ecoLabel(PG.eco) : ''].filter(Boolean).join(' · ');
+    var h = '<h1 class="hsp-title">' + esc(title || T.search) + '</h1><div class="hsp-sub">' + all.length + ' ' + plural(all.length) + '</div>';
+    if (b) h += '<div class="hsp-brand"><strong>' + esc(brandLabel(b)) + '</strong><span>' + brandStat(b) + '</span>' + (BRURL && BRURL[b.s] ? '<a href="' + esc(BRURL[b.s]) + '">' + T.brandAll + ' →</a>' : '') + '</div>';
+    var cn = {};
+    all.forEach(function (p) { Array.from(new Set(p.cat.concat(p.dc).map(function (c) { return c.split('>').pop().trim(); }))).forEach(function (c) { if (c && !CATX.test(norm(c)) && catLink(c)) cn[c] = (cn[c] || 0) + 1; }); });
+    var cats = Object.keys(cn).sort(function (x, y) { return cn[y] - cn[x]; }).slice(0, 6).map(function (c) { return [c, cn[c]]; });
+    if (cats.length) h += '<div class="hsp-cats">' + cats.map(function (c) { return '<a class="hsp-cat" href="' + esc(catLink(c[0])) + '">' + esc(c[0]) + ' <b>' + c[1] + '</b></a>'; }).join('') + '</div>';
+    var pc = {}; all.forEach(function (p) { p.proto.forEach(function (k) { pc[k] = (pc[k] || 0) + 1; }); });
+    var pk = PROTOS.map(function (x) { return x[1]; }).filter(function (k) { return pc[k] && (pc[k] < all.length || PG.f === k); });
+    h += '<div class="hsp-bar"><div class="hss-chips" style="margin:0"><button type="button" class="hss-chip' + (PG.stock ? ' on' : '') + '" data-stock="1">' + T.onlyStock + '</button>' +
+      pk.map(function (k) { return '<button type="button" class="hss-chip' + (PG.f === k ? ' on' : '') + '" data-pf="' + k + '">' + k + ' <span style="opacity:.7">' + pc[k] + '</span></button>'; }).join('') +
+      '</div><select class="hsp-sort" aria-label="' + T.sort + '"><option value="rel"' + (PG.sort === 'rel' ? ' selected' : '') + '>' + T.rel + '</option><option value="asc"' + (PG.sort === 'asc' ? ' selected' : '') + '>' + T.asc + '</option><option value="desc"' + (PG.sort === 'desc' ? ' selected' : '') + '>' + T.desc + '</option></select></div>';
+    if (PG.eco && !b) {
+      var bcs = brandCounts(all);
+      if (bcs.length >= 2) h += '<div class="hss-chips hsp-brands"><span class="hsp-lbl">' + T.brandLbl + '</span>' + bcs.slice(0, 12).map(function (x) {
+        return '<button type="button" class="hss-chip" data-pb="' + esc(x[0].s) + '">' + esc(brandLabel(x[0])) + ' <span style="opacity:.7">' + x[1] + '</span></button>';
+      }).join('') + '</div>';
+    } else if (b && PG.eco) h += '<div class="hss-chips hsp-brands"><button type="button" class="hss-chip on" data-pb="' + esc(b.s) + '">' + esc(brandLabel(b)) + ' ✕</button></div>';
+    if (!list.length) h += '<div class="hss-empty">' + T.noFilter + '</div>';
+    h += '<div class="hsp-grid">' + list.slice(0, PG.lim).map(function (p, i) { return card(p, pq, i); }).join('') + '</div>';
+    if (list.length > PG.lim) h += '<button type="button" class="hss-more" data-pmore="1">' + T.more + ' (' + (list.length - PG.lim) + ')</button>';
+    PG.root.innerHTML = h;
+    if (PL) livePrices(list.slice(0, PG.lim));
+    document.title = (title || T.search) + ' | HomeSystem';
+    syncUrl();
+  }
   function onPageClick(ev) {
+    var pb = ev.target.closest('[data-pb]'), pe = ev.target.closest('[data-eco]');
+    if (pb) { var bk = pb.getAttribute('data-pb'); PG.b = PG.b === bk ? null : bk; PG.lim = 24; ga('search_filter', { filter_type: 'znacka', filter_value: bk, search_term: PG.q, list: 'page' }); renderPage(); return; }
+    if (pe) { var ek = pe.getAttribute('data-eco'); PG.eco = PG.eco === ek ? null : ek; PG.lim = 24; ga('search_filter', { filter_type: 'funguje', filter_value: ek, search_term: PG.q, list: 'page' }); renderPage(); return; }
     var t = ev.target, q = t.closest('[data-q]'), pf = t.closest('[data-pf]'), sk = t.closest('[data-stock]'), pm = t.closest('[data-pmore]'), cart = t.closest('[data-c]');
     if (q) { ev.preventDefault(); goSearch(q.getAttribute('data-q')); return; }
     if (pf) { var k = pf.getAttribute('data-pf'); PG.f = PG.f === k ? null : k; PG.lim = 24; renderPage(); return; }
@@ -879,17 +1032,17 @@
   function initPage(start) {
     var main = document.querySelector('main.content') || document.getElementById('content');
     if (!main) return;
-    PG.q = pageQuery();
+    PG.q = pageQuery(); pageParams();
     PG.root = document.createElement('div'); PG.root.className = 'hsp';
     PG.root.innerHTML = '<div class="hsp-load">' + T.searching + '</div>';
     main.insertBefore(PG.root, main.firstChild);
     document.body.classList.add('hsp-on');
     PG.root.addEventListener('click', onPageClick);
     PG.root.addEventListener('change', function (e) { if (e.target.classList.contains('hsp-sort')) { PG.sort = e.target.value; renderPage(); } });
-    window.addEventListener('popstate', function () { PG.q = pageQuery(); PG.f = null; PG.lim = 24; renderPage(); });
+    window.addEventListener('popstate', function () { PG.q = pageQuery(); pageParams(); PG.f = null; PG.lim = 24; renderPage(); });
     var l = start();
     if (!l) { document.body.classList.remove('hsp-on'); PG.root.remove(); PG.root = null; return; }
-    l.then(renderPage).catch(function () { document.body.classList.remove('hsp-on'); if (PG.root) PG.root.remove(); PG.root = null; });
+    l.then(function () { return loadBrands(); }).then(renderPage).catch(function () { document.body.classList.remove('hsp-on'); if (PG.root) PG.root.remove(); PG.root = null; });
   }
 
   /* ---------- recent searches, tracking ---------- */
@@ -921,7 +1074,7 @@
   }
   function trackLink(t, q, where) {
     var a = t.closest('a[href]'); if (!a) return;
-    var type = a.closest('.hss-cat, .hsp-cat') ? 'kategoria' : a.closest('.hss-art, .hsp-art') ? 'clanok' : a.closest('.hss-karlik') ? 'karlik' : a.closest('.hss-alt') ? 'alternativa' : a.closest('.hss-card, .hss-mini') ? 'novinka_akcia' : a.closest('.hss-hint') ? 'riadiace_jednotky' : null;
+    var type = a.closest('.hss-eco, .hsp-brand.eco') ? 'funguje' : a.closest('.hss-brand, .hsp-brand') ? 'znacka' : a.closest('.hss-cat, .hsp-cat') ? 'kategoria' : a.closest('.hss-art, .hsp-art') ? 'clanok' : a.closest('.hss-karlik') ? 'karlik' : a.closest('.hss-alt') ? 'alternativa' : a.closest('.hss-card, .hss-mini') ? 'novinka_akcia' : a.closest('.hss-hint') ? 'riadiace_jednotky' : null;
     if (type) ga('search_link_click', { link_type: type, link_text: (a.querySelector('span') ? a.querySelector('span').textContent : a.textContent.replace(a.querySelector('b') ? a.querySelector('b').textContent : '', '')).replace(/\s+/g, ' ').trim().slice(0, 100), link_url: a.getAttribute('href'), search_term: q, list: where });
   }
 
@@ -967,7 +1120,9 @@
     var t = ev.target, q = t.closest('[data-q]'), f = t.closest('[data-f]'), more = t.closest('[data-more]'), cart = t.closest('[data-c]');
     if (q) { ev.preventDefault(); input.value = q.getAttribute('data-q'); st.f = null; st.all = false; input.focus(); render(); return; }
     if (f) { var k = f.getAttribute('data-f'); st.f = st.f === k ? null : k; render(); return; }
-    if (more) { goSearch(input.value); return; }
+    var bf = t.closest('[data-b]');
+    if (bf) { var bk = bf.getAttribute('data-b'); st.b = st.b === bk ? null : bk; ga('search_filter', { filter_type: 'znacka', filter_value: bk, search_term: input.value, list: 'dropdown' }); render(); return; }
+    if (more) { goSearch(input.value, st.b); return; }
     if (cart) {
       ev.preventDefault();
       var cr = cart.closest('.hss-row');
@@ -995,7 +1150,7 @@
     orig.parentNode.replaceChild(inp, orig);
     var deb = null;
     inp.addEventListener('focus', function () { input = inp; show(); });
-    inp.addEventListener('input', function () { input = inp; st.f = null; st.all = false; clearTimeout(deb); deb = setTimeout(function () { if (!open) show(); else render(); }, 60); });
+    inp.addEventListener('input', function () { input = inp; st.f = null; st.b = null; st.all = false; clearTimeout(deb); deb = setTimeout(function () { if (!open) show(); else render(); }, 60); });
     inp.addEventListener('keydown', function (e) {
       if (e.key === 'ArrowDown') { e.preventDefault(); setAct(1); }
       else if (e.key === 'ArrowUp') { e.preventDefault(); setAct(-1); }
@@ -1004,14 +1159,14 @@
         if (FAIL) return;
         e.preventDefault(); e.stopPropagation();
         if (st.act >= 0 && st.list[st.act]) { trackItem(st.list[st.act], st.act + 1, 'dropdown', inp.value); go(st.list[st.act].u); }
-        else { input = inp; goSearch(inp.value); }
+        else { input = inp; goSearch(inp.value, st.b); }
       }
     });
     if (inp.form) inp.form.addEventListener('submit', function (e) {
       if (FAIL) return;
       e.preventDefault(); e.stopImmediatePropagation();
       input = inp;
-      goSearch(inp.value);
+      goSearch(inp.value, st.b);
     }, true);
   }
   function init() {
@@ -1046,7 +1201,7 @@
           render();
         });
       }
-      loading.then(function () { window.HSS = { search: search, parse: parse, IX: IX, version: C.indexUrl, lang: L }; }).catch(function (e) {
+      loading.then(function () { window.HSS = { search: search, parse: parse, IX: IX, version: C.indexUrl, lang: L, brands: qBrands }; loadBrands().then(function () { if (open) render(); }); }).catch(function (e) {
         /* index sa nenačítal: vrátime pôvodné vyhľadávanie Shoptetu */
         console.warn('HSS', e); FAIL = true; hide();
         if (styleEl) styleEl.textContent = styleEl.textContent.replace('.search-whisperer{display:none!important}', '');
