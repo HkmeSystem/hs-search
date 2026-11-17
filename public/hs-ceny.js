@@ -13,7 +13,7 @@
   if (window.__HS_CENY) return; window.__HS_CENY = 1;
   var CFG = Object.assign({
     data: 'https://hkmesystem.github.io/hs-search/ceny/',
-    prechod: '2026-12-17',   // od tohto dňa je štandardná cena = najnižšia za 30 dní (automatický import)
+    prechod: '',             // RRRR-MM-DD: od tohto dňa je štandardná cena = najnižšia za 30 dní (automatický import); prázdne = vypnuté
     dni: 90,
     casti: 32                // musí sedieť so scripts/ceny.mjs
   }, window.HS_CENY || {});
@@ -35,7 +35,7 @@
   var DEN = 864e5;
   var dnesStr = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Bratislava' }).format(new Date());
   var dnes = new Date(dnesStr + 'T00:00:00');
-  var poPrechode = dnesStr >= CFG.prechod;
+  var poPrechode = !!CFG.prechod && dnesStr >= CFG.prechod;
   var toD = function (s) { return new Date(String(s).slice(0, 10) + 'T00:00:00'); };
   var fmt = function (n) {
     var s = (Math.round(n * 100) / 100).toFixed(2).replace(/,00$/, '');
