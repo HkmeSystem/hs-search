@@ -1,4 +1,4 @@
-/* HomeSystem.sk – nové vyhľadávanie v1.2 (SK/CS/EN) · v1.2 (15. 11. 2026): pri nedostupnom produkte ponuka odbaleného kusu skladom (rovnaký EAN); presná zhoda v názve má prednosť aj pri nedostupnom produkte; odbalený kus hneď za novým (rovnaký EAN) | index: index.json, index-cs.json, index-en.json vedľa tohto súboru */
+/* HomeSystem.sk – nové vyhľadávanie v1.3 (SK/CS/EN) · v1.3 (17. 11. 2026): kódy modelov bez pomlčiek (fgs224 = FGS-224, 201-p = 201P, r4 m = R4M, trvzbt = TRV-ZBT), preklepy (sonogf, shely, brdige…), anglické slová z kopírovaných názvov, voľnejšia zhoda pri dlhých názvoch s kódom modelu, presný názov (Shelly Pill) navrch, meranie až po dopísaní · v1.2 (15. 11. 2026): pri nedostupnom produkte ponuka odbaleného kusu skladom (rovnaký EAN); presná zhoda v názve má prednosť aj pri nedostupnom produkte; odbalený kus hneď za novým (rovnaký EAN) | index: index.json, index-cs.json, index-en.json vedľa tohto súboru */
 (function () {
   'use strict';
   if (window.__HSS_LOADED) return;
@@ -114,7 +114,7 @@
     { n: ['Štartovacie sady', 'Startovací sady', 'Starter kits'], re: /\bzacat\w*|\bzacit\w*|zaciatok|zacatek|zaciatocnik\w*|zacatecnik\w*|starter\w*|startovac\w*|getting started|beginner\w*/, alt: ['starter', 'startovac', 'zvyhodnen', 'bundle'] },
     { n: ['Smart zásuvky', 'Chytré zásuvky', 'Smart plugs'], re: /\bplug\w*|zasuv\w*|predlzov\w*|prodluzov\w*|\bsocket\w*|\boutlet\w*/, alt: ['zasuv', 'plug', 'predlzov', 'prodluz', 'socket', 'outlet'] },
     { n: ['Radiátorové hlavice', 'Radiátorové hlavice', 'Radiator thermostats'], re: /(termostatick\w* )?hlavic\w*|\btrv\b|radiatorov\w*( hlav\w*)?|radiator( valves?| thermostats?)?|thermostatic (radiator )?valves?/, alt: ['hlavic', '=trv', 'radiator'] },
-    { n: ['Senzory dverí a okien', 'Senzory dveří a oken', 'Door & window sensors'], re: /\bdver\w*|\bokn\w*|\bokien\b|\boken\b|\bdoors?\b|\bwindows?\b|contact sensors?/, alt: ['dver', 'okn', 'okien', 'oken', '=door', '=doors', 'window', 'contact'] },
+    { n: ['Senzory dverí a okien', 'Senzory dveří a oken', 'Door & window sensors'], re: /\bdver\w*|\bokn\w*|\bokien\b|\boken\w*|\bdoors?\b|\bwindows?\b|contact sensors?/, alt: ['dver', 'okn', 'okien', 'oken', '=door', '=doors', 'window', 'contact'] },
     { n: ['Senzory pohybu a prítomnosti', 'Senzory pohybu a přítomnosti', 'Motion & presence sensors'], re: /pohyb\w*|\bpir\b|motion|pritomn\w*|mmwave|prezenc\w*|presence|occupancy/, alt: ['pohyb', 'pir', 'motion', 'pritomn', 'mmwave', 'presence', 'occupancy'] },
     { n: ['Dymové senzory', 'Kouřové senzory', 'Smoke detectors'], re: /\bdym\w*|\bkour\w*|pozar\w*|smoke/, alt: ['dym', 'kour', 'smoke', 'pozar'] },
     { n: ['Detektory CO', 'Detektory CO', 'CO detectors'], re: /oxid\w* uhol\w*|oxid\w* uhelnat\w*|carbon monoxide|\bco\b (senzor\w*|detektor\w*|sensors?|detectors?)|(senzor\w*|detektor\w*|sensors?|detectors?) co\b/, alt: ['uhol', 'uhelnat', 'monoxide', 'co'] },
@@ -125,7 +125,7 @@
     { n: ['Zvončeky', 'Zvonky', 'Doorbells'], re: /zvonc\w*|zvonek\w*|zvonk\w*|doorbell\w*|videozvon\w*|intercom\w*/, alt: ['zvonc', 'zvonek', 'zvonk', 'doorbell', 'videozvon', 'intercom'] },
     { n: ['Smart zámky', 'Chytré zámky', 'Smart locks'], re: /zamk\w*|zamok|zamka|zamek|smartlock|\blocks?\b/, alt: ['zamk', 'zamok', 'zamka', 'zamek', 'lock', 'smartlock'] },
     { n: ['Termostaty', 'Termostaty', 'Thermostats'], re: /termostat(?!ick)\w*|thermostat(?!ic)\w*/, alt: ['termostat', 'thermostat'] },
-    { n: ['Teplota a vlhkosť', 'Teplota a vlhkost', 'Temperature & humidity'], re: /teplot\w*|vlhkost\w*|teplomer\w*|vlhkomer\w*|klimatick\w* senzor\w*|temperature|humidity|thermometer\w*|hygrometer\w*/, alt: ['teplot', 'vlhk', 'teplomer', 'climate', 'klimatick', 'temperature', 'humidity', 'thermometer'] },
+    { n: ['Teplota a vlhkosť', 'Teplota a vlhkost', 'Temperature & humidity'], re: /teplot\w*|vlhkost\w*|teplomer\w*|vlhkomer\w*|klimatick\w* senzor\w*|climate sensors?|temperature|humidity|thermometer\w*|hygrometer\w*/, alt: ['teplot', 'vlhk', 'teplomer', 'climate', 'klimatick', 'temperature', 'humidity', 'thermometer'] },
     { n: ['Ovládanie klimatizácie', 'Ovládání klimatizace', 'Air conditioning control'], re: /klimatiz\w*|\bir\b|infra\w*|air ?condition\w*|aircon\w*/, alt: ['klimatiz', 'ir', 'infra', 'aircon', 'conditioner'] },
     { n: ['Ventily na vodu', 'Ventily na vodu', 'Water valves'], re: /ventil\w*|uzaver\w*|valves?\b/, alt: ['ventil', 'uzaver', 'valve'] },
     { n: ['Meranie spotreby', 'Měření spotřeby', 'Energy metering'], re: /spotreb\w*|elektromer\w*|merac\w* energ\w*|energy\w*|merani\w*|power meters?|consumption/, alt: ['spotreb', 'elektromer', 'energ', 'merac', 'meran', 'consumption'] },
@@ -155,6 +155,16 @@
   var STOP = new Set(('na do pre s so a cez v vo z zo k ku od pri po za ktory ktora ktore ktoru co chcem hladam potrebujem nejaky nejaka nejake nejaku mi moj moja moje ako je to sa by aj alebo ci mobil mobilom mobilu telefon telefonom aplikaciu aplikacia appku app navod navody sprievodca tipy porovnanie rozdiel vybrat vyber aky aka ake recenzia ' +
     'pro se ze ke ktery ktera ktere kterou chci hledam potrebuji muj jak nebo zda mobilem telefonem aplikace aplikaci pruvodce porovnani rozdil jaky jaka jake recenze ' +
     'the for with and of an to in on or my me need want looking buy how what which is are works compatible phone guide guides tips review vs best').split(' '));
+  /* v1.3: preklepy (nahradia slovo) a anglické slová z názvov skopírovaných z iných obchodov (pridajú sa ako alternatíva, len SK/CS) */
+  var TYPO = { sonogf: 'sonoff', sonof: 'sonoff', sonnoff: 'sonoff', sonff: 'sonoff', snoff: 'sonoff', sonofd: 'sonoff', sonnof: 'sonoff',
+    shely: 'shelly', sehlly: 'shelly', shelli: 'shelly', shelyy: 'shelly', shelyl: 'shelly', shellly: 'shelly', schelly: 'shelly', helly: 'shelly',
+    brdige: 'bridge', bridg: 'bridge', brige: 'bridge', bridže: 'bridge', asistent: 'assistant', asistant: 'assistant', assistent: 'assistant', asisstant: 'assistant',
+    zegbee: 'zigbee', zigbe: 'zigbee', zigebee: 'zigbee', zibgee: 'zigbee', zigbbe: 'zigbee', fibraro: 'fibaro', fibarro: 'fibaro', homy: 'homey', aquara: 'aqara', akara: 'aqara', aqra: 'aqara',
+    sezor: 'senzor', snezor: 'senzor', senor: 'senzor', youbbi: 'yubii', yubi: 'yubii', yubbi: 'yubii', tede: 'tedee', tedd: 'tedee' };
+  var ENW = { weather: 'meteo', station: 'stanica', ceiling: 'stropne', climate: 'klimaticky', sensor: 'senzor', sensors: 'senzor', switch: 'vypinac', button: 'tlacidlo',
+    remote: 'dialkovy', relay: 'rele', transformer: 'svorka', clamp: 'svorka', current: 'prud', meter: 'merac', detector: 'detektor', wireless: 'bezdrotovy',
+    outdoor: 'vonkajsi', indoor: 'vnutorny', black: 'cierny', white: 'biely', kit: 'sada', strip: 'pas', controller: 'ovladac', mini: 'mini', curtain: 'zaves' };
+  var typoQ = function (q) { return spaced(q).split(' ').map(function (w) { return TYPO[w] || w; }).join(' '); };
   var SOFT = /^(senzor|sensor|detekt|cidl|smart|chytr|inteligent|home$|domac|zariaden|zarizen|device|modul|system|ovladani|ovladan|control$)/;
   var INTENT = /\b(ako|jak|how|navod\w*|sprievodc\w*|pruvodc\w*|guides?|co je|what is|aky|aka|ake|jaky|jaka|which|ktory|ktora|ktery|porovnan\w*|compar\w*|rozdiel\w*|rozdil\w*|difference|zacat|zacit|zaciatok|zacatek|getting started|tipy|tips|recenz\w*|reviews?|vybrat|vyber|choose)\b/;
   var ACC = /^(drziak|drzak|kryt|bateri|batter|napajac|napajec|adapter|kabel|cable|ramik|ramec|montaz|mount|holder|bracket|cover|nahradn|spare|replacement|prislus|accessor|redukc|magnet|nalepk|sticker|podlozk|2x|3x|4x)/;
@@ -216,18 +226,39 @@
     return out;
   }
 
+  /* v1.3: kódy modelov spojené bez pomlčiek – „FIB_FGS-224“ → fibfgs224, fgs224; „TRV-ZBT“ → trvzbt; „GL-C-201P“ → glc201p, c201p */
+  function kody(s) {
+    var out = [];
+    (norm(s).match(/[a-z0-9]+(?:[-_./+][a-z0-9]+)+/g) || []).forEach(function (m) {
+      var x = m.split(/[-_./+]/).filter(Boolean);
+      for (var i = 0; i < x.length; i++) for (var j = i + 1; j < x.length && j < i + 4; j++) {
+        var c = x.slice(i, j + 1).join('');
+        if (c.length >= 4 && c.length <= 20 && out.indexOf(c) < 0) out.push(c);
+      }
+    });
+    return out;
+  }
+  /* variant dopytu so spojenými kódmi: „fgs-224“ → fgs224, „201-p“ → 201p, „r4 m“ → r4m, „50 a“ → 50a */
+  function kodQ(q) {
+    var s = ' ' + norm(q).replace(/\b([a-z0-9]{1,6})[-_]([a-z0-9]{1,8})\b/g, function (m, a, b) { return /\d/.test(a + b) || (a.length <= 4 && b.length <= 4) ? a + b : m; })
+      .replace(/[^a-z0-9]+/g, ' ') + ' ';
+    s = s.replace(/ ([a-z]*\d[a-z0-9]*) ([a-z]{1,2})(?= )/g, ' $1$2');
+    return s.replace(/\s+/g, ' ').trim();
+  }
   function prep(P) {
-    var vocab = new Map(), vx = new Set(), brands = new Set(), byCode = new Map(), byUrl = new Map();
+    var vocab = new Map(), vx = new Set(), brands = new Set(), byCode = new Map(), byUrl = new Map(), cset = new Set();
     P.forEach(function (p) {
       p.ext = p.fl.indexOf('externy-sklad') >= 0 || /^centr/.test(norm(p.a));
       p.tn = toks(p.n); p.tm = toks(p.m); p.tc = toks(p.cat.concat(p.dc).join(' '));
       p.tx = toks(p.sd + ' ' + p.tp + ' ' + p.c + ' ' + p.ean);
+      p.tk = kody(p.n + ' ' + p.c);
       p.attr = ' ' + spaced(p.pr + ' ' + p.cat.join(' ') + ' ' + p.n + (p.fl.indexOf('custom1') >= 0 ? ' fibaro' : '') + (p.fl.indexOf('custom3') >= 0 ? ' homey' : '')) + ' ';
       var pa = ' ' + spaced(p.pr + ' ' + p.n + ' ' + p.cat.join(' ')) + ' ';
       p.proto = PROTOS.filter(function (x) { return pa.indexOf(' ' + x[0]) >= 0; }).map(function (x) { return x[1]; });
       p.ok = p.s > 0 && !p.ext;
       p.tn.concat(p.tm, p.tc).forEach(function (t) { if (t.length >= 2) vocab.set(t, (vocab.get(t) || 0) + 1); });
       p.tx.forEach(function (t) { vx.add(t); });
+      p.tk.forEach(function (t) { vx.add(t); cset.add(t); });
       p.tm.forEach(function (t) { if (t.length >= 3) brands.add(t); });
       byCode.set(p.c, p); byUrl.set(p.u, p);
     });
@@ -236,7 +267,7 @@
       if (!p.ok || !p.ean || !jeBazar(p)) return;
       String(p.ean).split(' ').forEach(function (e) { if (!e) return; if (!baz.has(e)) baz.set(e, []); baz.get(e).push(p); });
     });
-    return { P: P, baz: baz, vocab: Array.from(vocab), vx: Array.from(vx), brands: brands, byCode: byCode, byUrl: byUrl };
+    return { P: P, baz: baz, vocab: Array.from(vocab), vx: Array.from(vx), brands: brands, byCode: byCode, byUrl: byUrl, cset: cset };
   }
 
   /* ---------- query understanding ---------- */
@@ -247,6 +278,8 @@
   }
   function resolve(w) {
     if (w.length <= 2 || /^\d+$/.test(w)) return { alts: [w], exact: true, w: w };
+    /* v1.3: kód modelu (fgs224, trvzbt, r4m) sa neskracuje */
+    if (IX.cset.has(w) || (/\d/.test(w) && /[a-z]/.test(w) && inVocab(w))) return { alts: [w], w: w, code: true };
     var a = IX.brands.has(w) ? w : stem(w);
     if (inVocab(a)) return { alts: [a], w: w };
     var md = w.length >= 7 ? 2 : 1, best = null, bd = 9, bf = -1;
@@ -261,7 +294,7 @@
     return { alts: [a], w: w };
   }
   function parse(raw) {
-    var s = ' ' + spaced(raw) + ' ', terms = [], labels = [], fixes = [];
+    var fixes = [], s = ' ' + spaced(raw).split(' ').map(function (w) { if (TYPO[w]) { if (fixes.indexOf(TYPO[w]) < 0) fixes.push(TYPO[w]); return TYPO[w]; } return w; }).join(' ') + ' ', terms = [], labels = [];
     var intent = INTENT.test(s);
     G.forEach(function (g) {
       if (g.re.test(s)) { terms.push({ alts: g.alt, group: g.n[LI] }); labels.push(g.n[LI]); s = s.replace(new RegExp(g.re.source, 'g'), ' '); }
@@ -272,6 +305,7 @@
     s.split(' ').forEach(function (w) {
       if (!w || STOP.has(w)) return;
       var t = resolve(w);
+      if (L !== 'en' && ENW[w] && ENW[w] !== w) { var e2 = resolve(ENW[w]); t = { alts: t.alts.concat(e2.alts), w: w }; }
       t.soft = hasGroup && SOFT.test(w);
       if (t.fix) fixes.push(t.fix);
       terms.push(t);
@@ -290,6 +324,7 @@
     t.alts.forEach(function (a) {
       var f = function (x) { return mt(x, a, t.exact); };
       if (p.tn.some(f)) best = Math.max(best, 3);
+      else if (p.tk.some(f)) best = Math.max(best, 2.8);
       else if (p.tm.some(f)) best = Math.max(best, 2.5);
       else if (p.tc.some(f)) best = Math.max(best, 1.2);
       else if (!t.group && p.tx.some(f)) best = Math.max(best, 0.6);
@@ -314,11 +349,16 @@
   function jeBazar(p) { return !!(p.bz || /-BAZAR\d*$/i.test(p.c || '') || /^\s*(odbalen|rozbalen|unboxed|open[- ]box)/i.test(p.n || '')); }
   function litBoost(p, lit, qs) {
     if (!lit.length) return 0;
-    var hit = lit.filter(function (w) { return p.tn.some(function (t) { return t.indexOf(w) === 0 || (t.length >= 4 && w.indexOf(t) === 0); }); }).length, b = 0;
+    var tw = p.tn.concat(p.tk, p.tm);
+    var hit = lit.filter(function (w) { return tw.some(function (t) { return t.indexOf(w) === 0 || (t.length >= 4 && w.indexOf(t) === 0); }); }).length, b = 0;
     if (hit === lit.length) {
       b += 6;
-      if ((' ' + spaced(p.n) + ' ').indexOf(' ' + qs + ' ') >= 0) b += 2;
-      if (!p.ok && /nedostup|vypredan|vyprodan|unavailable|sold out|out of stock/.test(norm(p.a))) b += 1.5;
+      var nm = spaced(p.n);
+      if ((' ' + nm + ' ').indexOf(' ' + qs + ' ') >= 0) b += 2;
+      /* v1.3: názov sa začína hľadaným slovom (aj za značkou) – „pill“ → Shelly Pill pred doplnkami k nemu */
+      if (nm.indexOf(qs + ' ') === 0 || nm === qs || p.tm.some(function (m) { return nm.indexOf(m + ' ' + qs + ' ') === 0 || nm === m + ' ' + qs; })) b += 2.5;
+      /* nedostupný s plnou zhodou: len pri konkrétnom dopyte (2+ slová alebo kód), nie pri všeobecnom slove ako „videovrátnik“ */
+      if (!p.ok && (lit.length >= 2 || /\d/.test(qs)) && /nedostup|vypredan|vyprodan|unavailable|sold out|out of stock/.test(norm(p.a))) b += 1.5;
     } else if (lit.length > 1 && hit) b += 2 * hit / lit.length;
     if (jeBazar(p)) b -= 1;
     return b;
@@ -338,20 +378,35 @@
     return out;
   }
   function search(q) {
-    var pq = parse(q), full = [], part = [];
+    var r = search1(q), k = kodQ(q);
+    if (k && k !== spaced(q)) {
+      var cnt = function (x) { return x.res.filter(function (y) { return !y.partial; }).length; };
+      var r2 = search1(k);
+      if ((cnt(r) === 0 && cnt(r2) > 0) || (!r.res.length && r2.res.length)) { r2.pq.raw = q; return r2; }
+    }
+    return r;
+  }
+  function search1(q) {
+    var pq = parse(q), full = [], part = [], loose = [];
     if (!pq.terms.length) return { pq: pq, res: [] };
     var req = pq.terms.filter(function (t) { return !t.soft; });
-    var lit = spaced(q).split(' ').filter(function (w) { return w.length >= 2 && !STOP.has(w); }), qs = lit.join(' ');
+    var lit = typoQ(q).split(' ').filter(function (w) { return w.length >= 2 && !STOP.has(w); }), qs = lit.join(' ');
     IX.P.forEach(function (p) {
-      var sc = 0, miss = 0;
-      pq.terms.forEach(function (t) { var s = termScore(p, t); if (!s && !t.soft) miss++; sc += s; });
+      var sc = 0, miss = 0, hits = 0, strong = false;
+      pq.terms.forEach(function (t) {
+        var s = termScore(p, t); if (!s && !t.soft) miss++; sc += s;
+        if (s && !t.soft) { hits++; if (s >= 2.5 && t.w && (t.code || /\d/.test(t.w)) && t.w.length >= 3) strong = true; }
+      });
       if (!sc) return;
       if (!miss) full.push({ p: p, s: sc + boost(p, pq) + litBoost(p, lit, qs) });
       else if (miss === 1 && req.length >= 2) part.push({ p: p, s: sc + boost(p, pq) + litBoost(p, lit, qs) - 4, partial: true });
+      /* v1.3: dlhý skopírovaný názov – sedí kód modelu a aspoň polovica slov */
+      else if (req.length >= 3 && strong && hits >= 2 && hits * 2 >= req.length) loose.push({ p: p, s: sc + boost(p, pq) - 4 - miss, partial: true });
     });
     var by = function (x, y) { return y.s - x.s; };
     full.sort(by);
     if (full.length < 4) { part.sort(by); full = full.concat(part.slice(0, 16)); }
+    if (!full.length && loose.length) { loose.sort(by); full = loose.slice(0, 12); }
     return { pq: pq, res: dvojice(full) };
   }
   function searchArticles(pq) {
@@ -843,15 +898,19 @@
     q = (q || '').trim(); if (q.length < 2) return;
     try { var r = recent().filter(function (x) { return x !== q; }); r.unshift(q); localStorage.setItem(RKEY, JSON.stringify(r.slice(0, 5))); } catch (e) {}
   }
-  var tTimer = null;
+  var tTimer = null, tLast = '';
   function track(q, n) {
     if (!C.track) return;
     clearTimeout(tTimer);
+    q = (q || '').trim();
+    /* v1.3: zapisuje sa až po 2,5 s bez písania (nie rozpísané slová), rovnaký dopyt len raz za sebou */
+    if (q.length < 2 || q === tLast) return;
     tTimer = setTimeout(function () {
       if (typeof window.gtag !== 'function') return;
+      tLast = q;
       gtag('event', 'search', { search_term: q, results_count: n, language: L, send_to: C.ga });
       if (!n) gtag('event', 'search_no_results', { search_term: q, language: L, send_to: C.ga });
-    }, 1500);
+    }, 2500);
   }
   /* kliknutia z vyhľadávania: na ktorý produkt / kategóriu / článok ľudia klikli a na akej pozícii */
   function ga(name, params) { if (C.track && typeof window.gtag === 'function') { try { params.language = L; params.send_to = C.ga; gtag('event', name, params); } catch (e) {} } }
