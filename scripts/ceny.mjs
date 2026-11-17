@@ -1,10 +1,11 @@
-// História cien HomeSystem.sk – v1 (17. 11. 2026)
+// História cien HomeSystem.sk – v2 (17. 11. 2026)
+// v2: navyše zverejní históriu pre graf „Vývoj ceny“ (hs-ceny.js) do public/ceny/NN.json
 // Spúšťa build.yml po zostavení indexu. Číta ceny-snap/<jazyk>.json (z build-index.mjs v1.3)
 // a do priečinka vetvy „ceny“ (CENY_DIR) zapisuje:
 //   stav-<jazyk>.json            posledný známy stav { kód: [účinná cena, cena, štandardná, akčná, od, do, viditeľný] }
 //   zmeny-<jazyk>-RRRR-MM.jsonl  každá zmena jeden riadok (čas UTC, kód, ceny) – archív pre SOI
 // Účinná cena = akčná, ak platí v daný deň (Europe/Bratislava), inak bežná cena s DPH.
-import { readFileSync, writeFileSync, existsSync, appendFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, appendFileSync, mkdirSync, readdirSync } from 'node:fs';
 
 const SNAP = 'ceny-snap';
 const DIR = process.env.CENY_DIR || 'ceny-data';
@@ -41,6 +42,46 @@ for (const lang of ['sk', 'cs']) {
   writeFileSync(sf, JSON.stringify(stav));
   console.log(lang + ': ' + n + ' kódov, ' + (prvy ? 'prvé uloženie' : riadky.length + ' zmien'));
 }
+
+// ---------- v2: história pre graf na webe (GitHub Pages) ----------
+// public/ceny/NN.json = { kód: [["RRRR-MM-DD", účinná cena], …] } – len viditeľné kódy, posledných DNI dní,
+// v jeden deň posledná cena dňa. Kód patrí do súboru podľa cast(kód) – rovnaká funkcia je v hs-ceny.js.
+const DNI = 120, CASTI = 32, PUB = process.env.PUB_DIR || 'public';
+const cast = (c) => { let x = 0; for (const ch of c) x = (x * 31 + ch.charCodeAt(0)) >>> 0; return x % CASTI; };
+const denBA = (iso) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Bratislava' }).format(new Date(iso));
+function historiaPreWeb(lang) {
+  const sf = DIR + '/stav-' + lang + '.json';
+  if (!existsSync(sf)) return;
+  const stav = JSON.parse(readFileSync(sf, 'utf8'));
+  const hranica = new Date(now - DNI * 864e5).toISOString().slice(0, 10);
+  const subory = readdirSync(DIR).filter((f) => f.startsWith('zmeny-' + lang + '-') && f.endsWith('.jsonl')).sort();
+  const h = {};
+  for (const f of subory) {
+    for (const ln of readFileSync(DIR + '/' + f, 'utf8').split('\n')) {
+      if (!ln) continue;
+      let z; try { z = JSON.parse(ln); } catch (e) { continue; }
+      if (z.x || !(z.p > 0)) continue;
+      const d = denBA(z.t), a = h[z.c] || (h[z.c] = []);
+      if (a.length && a[a.length - 1][0] === d) a[a.length - 1][1] = z.p; else a.push([d, z.p]);
+    }
+  }
+  const out = Array.from({ length: CASTI }, () => ({}));
+  let n = 0;
+  for (const [c, a] of Object.entries(h)) {
+    if (!stav[c] || stav[c][6] !== 1) continue;
+    // staršie body orezať, ale ponechať posledný pred hranicou (cena na začiatku grafu)
+    let i = 0; while (i < a.length - 1 && a[i + 1][0] <= hranica) i++;
+    const b = a.slice(i).filter((x, k, arr) => k === 0 || x[1] !== arr[k - 1][1]);
+    out[cast(c)][c] = b; n++;
+  }
+  const dir = PUB + '/ceny' + (lang === 'sk' ? '' : '-' + lang);
+  mkdirSync(dir, { recursive: true });
+  out.forEach((o, k) => writeFileSync(dir + '/' + k + '.json', JSON.stringify(o)));
+  const od = Object.values(h).reduce((m, a) => (a[0] && a[0][0] < m ? a[0][0] : m), '9999');
+  writeFileSync(dir + '/info.json', JSON.stringify({ v: now.toISOString(), od, kody: n, casti: CASTI }));
+  console.log(lang + ': história pre web – ' + n + ' kódov od ' + od);
+}
+try { historiaPreWeb('sk'); } catch (e) { console.log('::warning::história pre web: ' + e.message); }
 
 const readme = DIR + '/README.md';
 if (!existsSync(readme)) writeFileSync(readme, `# História cien obchod.homesystem.sk
