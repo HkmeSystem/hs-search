@@ -1,4 +1,4 @@
-/* HomeSystem.sk – nové vyhľadávanie v1.4 (SK/CS/EN) · v1.4 (17. 11. 2026): značky – karta značky v okne (Homey → Athom), filter značiek v okne aj na stránke výsledkov, „Funguje s Homey / FIBAROM“, odkazy s ?znacka= a ?funguje= (bez hľadaného slova string=*, napr. /vyhladavanie/?string=*&funguje=homey pre e-maily) · v1.3 (17. 11. 2026): kódy modelov bez pomlčiek (fgs224 = FGS-224, 201-p = 201P, r4 m = R4M, trvzbt = TRV-ZBT), preklepy (sonogf, shely, brdige…), anglické slová z kopírovaných názvov, voľnejšia zhoda pri dlhých názvoch s kódom modelu, presný názov (Shelly Pill) navrch, meranie až po dopísaní · v1.2 (15. 11. 2026): pri nedostupnom produkte ponuka odbaleného kusu skladom (rovnaký EAN); presná zhoda v názve má prednosť aj pri nedostupnom produkte; odbalený kus hneď za novým (rovnaký EAN) | index: index.json, index-cs.json, index-en.json vedľa tohto súboru */
+/* HomeSystem.sk – nové vyhľadávanie v1.5 (SK/CS/EN) · v1.5 (18. 11. 2026): produkty „len cez URL“ (Shoptet detailOnly, napr. FIBARO Home Center 3 po skončení predaja) sa nájdu pri konkrétnom dopyte – celý názov/fráza („home center 3“, „hc3“), kód alebo EAN; nie sú v značkách, akciách, novinkách ani v stránkach filtrov, max. 8 vo výsledkoch, pod nimi ponuka náhrady skladom · v1.4 (17. 11. 2026): značky – karta značky v okne (Homey → Athom), filter značiek v okne aj na stránke výsledkov, „Funguje s Homey / FIBAROM“, odkazy s ?znacka= a ?funguje= (bez hľadaného slova string=*, napr. /vyhladavanie/?string=*&funguje=homey pre e-maily) · v1.3 (17. 11. 2026): kódy modelov bez pomlčiek (fgs224 = FGS-224, 201-p = 201P, r4 m = R4M, trvzbt = TRV-ZBT), preklepy (sonogf, shely, brdige…), anglické slová z kopírovaných názvov, voľnejšia zhoda pri dlhých názvoch s kódom modelu, presný názov (Shelly Pill) navrch, meranie až po dopísaní · v1.2 (15. 11. 2026): pri nedostupnom produkte ponuka odbaleného kusu skladom (rovnaký EAN); presná zhoda v názve má prednosť aj pri nedostupnom produkte; odbalený kus hneď za novým (rovnaký EAN) | index: index.json, index-cs.json, index-en.json vedľa tohto súboru */
 (function () {
   'use strict';
   if (window.__HSS_LOADED) return;
@@ -17,7 +17,7 @@
       partial: 'Presnú zhodu sme nenašli, toto sú najbližšie výsledky.', none1: 'Pre „', none2: '“ sme nenašli žiadny produkt. Skúste iné slovo alebo ', none3: 'nám napíšte', none4: ', radi poradíme.',
       cats: 'Kategórie', blog: 'Z blogu', allArts: 'Všetky články', guides: 'Návody a články', products: 'Produkty', stock: 'Skladom', pcs: 'ks', central: 'Centrálny sklad', unavail: 'Nedostupné',
       tip: 'Odporúčame', isNew: 'Novinka', saleToday: 'Zľava končí dnes', saleDays: function (d) { return 'Zľava ešte ' + d + ' dni'; }, from: 'od ', homey: 'Funguje s Homey', fibaro: 'Funguje s FIBAROM',
-      unbx: 'Skladom je aj', unbxL: 'odbalený kus', similar: 'Skladom je podobný:', 'for': 'za', cart: 'Do košíka', added: 'Pridané',
+      unbx: 'Skladom je aj', unbxL: 'odbalený kus', similar: 'Skladom je podobný:', succ: 'Nahrádza ho:', 'for': 'za', cart: 'Do košíka', added: 'Pridané',
       zigHint: 'Zigbee zariadenia potrebujú na fungovanie bránu (hub).', zwHint: 'Z-Wave zariadenia sa pripájajú cez centrálnu jednotku, napríklad Homey alebo FIBARO Home Center.',
       ifNot: ' Ak ju ešte nemáte, ', seeHubs: 'pozrite si riadiace jednotky', zigQ: 'zigbee brána', zwQ: 'zwave centrálna jednotka',
       karTitle: 'Vypínače a zásuvky Karlik', karText: 'Kompletný sortiment Karlik nájdete v samostatnej kategórii.', karAll: 'Celá ponuka Karlik →',
@@ -32,7 +32,7 @@
       partial: 'Přesnou shodu jsme nenašli, toto jsou nejbližší výsledky.', none1: 'Pro „', none2: '“ jsme nenašli žádný produkt. Zkuste jiné slovo nebo ', none3: 'nám napište', none4: ', rádi poradíme.',
       cats: 'Kategorie', blog: 'Z blogu', allArts: 'Všechny články', guides: 'Návody a články', products: 'Produkty', stock: 'Skladem', pcs: 'ks', central: 'Centrální sklad', unavail: 'Nedostupné',
       tip: 'Doporučujeme', isNew: 'Novinka', saleToday: 'Sleva končí dnes', saleDays: function (d) { return 'Sleva ještě ' + d + (d <= 4 ? ' dny' : ' dní'); }, from: 'od ', homey: 'Funguje s Homey', fibaro: 'Funguje s FIBAREM',
-      unbx: 'Skladem je i', unbxL: 'rozbalený kus', similar: 'Skladem je podobný:', 'for': 'za', cart: 'Do košíku', added: 'Přidáno',
+      unbx: 'Skladem je i', unbxL: 'rozbalený kus', similar: 'Skladem je podobný:', succ: 'Nahrazuje ho:', 'for': 'za', cart: 'Do košíku', added: 'Přidáno',
       zigHint: 'Zigbee zařízení potřebují ke svému fungování bránu (hub).', zwHint: 'Z-Wave zařízení se připojují přes centrální jednotku, například Homey nebo FIBARO Home Center.',
       ifNot: ' Pokud ji ještě nemáte, ', seeHubs: 'podívejte se na řídicí jednotky', zigQ: 'zigbee brána', zwQ: 'zwave centrální jednotka',
       karTitle: 'Vypínače a zásuvky Karlik', karText: 'Kompletní sortiment Karlik najdete v samostatné kategorii.', karAll: 'Celá nabídka Karlik →',
@@ -47,7 +47,7 @@
       partial: 'No exact match found, here are the closest results.', none1: 'We couldn’t find any products for “', none2: '”. Try another word or ', none3: 'contact us', none4: ', we’re happy to help.',
       cats: 'Categories', blog: 'From the blog', allArts: 'All articles', guides: 'Guides & articles', products: 'Products', stock: 'In stock', pcs: 'pcs', central: 'Central warehouse', unavail: 'Unavailable',
       tip: 'Recommended', isNew: 'New', saleToday: 'Sale ends today', saleDays: function (d) { return 'Sale ends in ' + d + ' days'; }, from: 'from ', homey: 'Works with Homey', fibaro: 'Works with FIBARO',
-      unbx: 'In stock:', unbxL: 'unboxed item', similar: 'Similar item in stock:', 'for': 'for', cart: 'Add to cart', added: 'Added',
+      unbx: 'In stock:', unbxL: 'unboxed item', similar: 'Similar item in stock:', succ: 'Replaced by:', 'for': 'for', cart: 'Add to cart', added: 'Added',
       zigHint: 'Zigbee devices need a gateway (hub) to work.', zwHint: 'Z-Wave devices connect through a controller, such as Homey or FIBARO Home Center.',
       ifNot: ' If you don’t have one yet, ', seeHubs: 'see our controllers', zigQ: 'zigbee gateway', zwQ: 'zwave controller',
       karTitle: 'Karlik switches and sockets', karText: 'You’ll find the full Karlik range in a separate category.', karAll: 'All Karlik products →',
@@ -163,7 +163,8 @@
     shely: 'shelly', sehlly: 'shelly', shelli: 'shelly', shelyy: 'shelly', shelyl: 'shelly', shellly: 'shelly', schelly: 'shelly', helly: 'shelly',
     brdige: 'bridge', bridg: 'bridge', brige: 'bridge', bridže: 'bridge', asistent: 'assistant', asistant: 'assistant', assistent: 'assistant', asisstant: 'assistant',
     zegbee: 'zigbee', zigbe: 'zigbee', zigebee: 'zigbee', zibgee: 'zigbee', zigbbe: 'zigbee', fibraro: 'fibaro', fibarro: 'fibaro', homy: 'homey', aquara: 'aqara', akara: 'aqara', aqra: 'aqara',
-    sezor: 'senzor', snezor: 'senzor', senor: 'senzor', youbbi: 'yubii', yubi: 'yubii', yubbi: 'yubii', tede: 'tedee', tedd: 'tedee' };
+    sezor: 'senzor', snezor: 'senzor', senor: 'senzor', youbbi: 'yubii', yubi: 'yubii', yubbi: 'yubii', tede: 'tedee', tedd: 'tedee',
+    /* v1.5: skratky starých riadiacich jednotiek */ hc3: 'home center 3', hc3l: 'home center 3 lite', hc2: 'home center 2', hcl: 'home center lite' };
   var ENW = { weather: 'meteo', station: 'stanica', ceiling: 'stropne', climate: 'klimaticky', sensor: 'senzor', sensors: 'senzor', switch: 'vypinac', button: 'tlacidlo',
     remote: 'dialkovy', relay: 'rele', transformer: 'svorka', clamp: 'svorka', current: 'prud', meter: 'merac', detector: 'detektor', wireless: 'bezdrotovy',
     outdoor: 'vonkajsi', indoor: 'vnutorny', black: 'cierny', white: 'biely', kit: 'sada', strip: 'pas', controller: 'ovladac', mini: 'mini', curtain: 'zaves' };
@@ -180,7 +181,8 @@
     var items = doc.documentElement.children;
     for (var k = 0; k < items.length; k++) {
       var e = items[k];
-      if (g(e, 'VISIBILITY') !== 'visible' || g(e, 'VISIBLE') !== '1') continue;
+      var vis = g(e, 'VISIBILITY'); /* v1.5: detailOnly = dostupné len cez URL */
+      if ((vis !== 'visible' && vis !== 'detailOnly') || g(e, 'VISIBLE') !== '1') continue;
       var name = g(e, 'NAME'), url = g(e, 'ORIG_URL');
       if (!name || !url) continue;
       var price = +g(e, 'PRICE_VAT') || 0, std = +g(e, 'STANDARD_PRICE') || 0, act = +g(e, 'ACTION_PRICE') || 0;
@@ -223,7 +225,7 @@
         p: price, o: old, f: from, un: until, s: stock, a: avail, m: g(e, 'MANUFACTURER'), cat: cats, dc: dc,
         pr: proto.join(' | '), tp: prm.join(' '), fl: flags,
         al: Array.prototype.map.call(e.querySelectorAll(':scope > ALTERNATIVE_PRODUCTS > CODE'), function (x) { return x.textContent.trim(); }),
-        sd: g(e, 'SHORT_DESCRIPTION').replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').slice(0, 300)
+        sd: g(e, 'SHORT_DESCRIPTION').replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').slice(0, 300), h: vis === 'detailOnly' ? 1 : 0
       });
     }
     return out;
@@ -262,15 +264,16 @@
       p.tn.concat(p.tm, p.tc).forEach(function (t) { if (t.length >= 2) vocab.set(t, (vocab.get(t) || 0) + 1); });
       p.tx.forEach(function (t) { vx.add(t); });
       p.tk.forEach(function (t) { vx.add(t); cset.add(t); });
-      p.tm.forEach(function (t) { if (t.length >= 3) brands.add(t); });
-      byCode.set(p.c, p); byUrl.set(p.u, p);
+      if (!p.h) p.tm.forEach(function (t) { if (t.length >= 3) brands.add(t); });
+      /* v1.5: skrytý (len cez URL) neprepíše viditeľný s rovnakým kódom/adresou */
+      if (!p.h || !byCode.has(p.c)) byCode.set(p.c, p); if (!p.h || !byUrl.has(p.u)) byUrl.set(p.u, p);
     });
     var baz = new Map();
     P.forEach(function (p) {
-      if (!p.ok || !p.ean || !jeBazar(p)) return;
+      if (p.h || !p.ok || !p.ean || !jeBazar(p)) return;
       String(p.ean).split(' ').forEach(function (e) { if (!e) return; if (!baz.has(e)) baz.set(e, []); baz.get(e).push(p); });
     });
-    return { P: P, baz: baz, vocab: Array.from(vocab), vx: Array.from(vx), brands: brands, byCode: byCode, byUrl: byUrl, cset: cset };
+    return { P: P.filter(function (p) { return !p.h; }), H: P.filter(function (p) { return p.h; }), baz: baz, vocab: Array.from(vocab), vx: Array.from(vx), brands: brands, byCode: byCode, byUrl: byUrl, cset: cset };
   }
 
   /* ---------- query understanding ---------- */
@@ -371,12 +374,14 @@
   function dvojice(res) {
     var out = [], used = [];
     var daj = function (x) { if (used.indexOf(x) < 0) { out.push(x); used.push(x); } };
+    /* v1.5: odbalený kus len cez URL sa k novému nepáruje (ostáva na svojom mieste) */
+    var bz = function (p) { return jeBazar(p) && !p.h; };
     res.forEach(function (x) {
       if (used.indexOf(x) >= 0) return;
       /* odbalený pred novým: posunie sa nižšie, hneď za nový (nový sa nevyťahuje hore) */
-      if (jeBazar(x.p) && res.some(function (y) { return !jeBazar(y.p) && used.indexOf(y) < 0 && eanSpolu(y.p, x.p); })) return;
+      if (bz(x.p) && res.some(function (y) { return !jeBazar(y.p) && used.indexOf(y) < 0 && eanSpolu(y.p, x.p); })) return;
       daj(x);
-      if (!jeBazar(x.p)) res.forEach(function (y) { if (jeBazar(y.p) && eanSpolu(x.p, y.p)) daj(y); });
+      if (!jeBazar(x.p)) res.forEach(function (y) { if (bz(y.p) && eanSpolu(x.p, y.p)) daj(y); });
     });
     return out;
   }
@@ -394,20 +399,33 @@
     if (!pq.terms.length) return { pq: pq, res: [] };
     var req = pq.terms.filter(function (t) { return !t.soft; });
     var lit = typoQ(q).split(' ').filter(function (w) { return w.length >= 2 && !STOP.has(w); }), qs = lit.join(' ');
-    IX.P.forEach(function (p) {
+    /* v1.5: produkty len cez URL – len pri konkrétnom dopyte (kód / EAN, alebo všetky slová v názve a buď súvislá fráza, alebo číslo), najviac 8 */
+    var hq = typoQ(q).split(' ').filter(function (w) { return w && !STOP.has(w); }), hph = ' ' + hq.join(' ') + ' ', hk = norm(q).replace(/[^a-z0-9]/g, '');
+    var hidOk = function (p) {
+      if (!hq.length) return 0;
+      if (hk.length >= 5 && (p.tk.indexOf(hk) >= 0 || norm(p.c).replace(/[^a-z0-9]/g, '') === hk || String(p.ean).split(' ').indexOf(hk) >= 0)) return 1;
+      if (hq.length < 2) return 0;
+      var tw = p.tn.concat(p.tk, p.tm);
+      if (!hq.every(function (w) { return tw.some(function (t) { return t === w || (w.length >= 3 && t.indexOf(w) === 0) || (t.length >= 4 && w.indexOf(t) === 0); }); })) return 0;
+      return (' ' + spaced(p.n) + ' ').indexOf(hph) >= 0 || /\d/.test(hph) ? 1 : 0;
+    };
+    var HID = (IX.H || []).filter(hidOk);
+    IX.P.concat(HID).forEach(function (p) {
       var sc = 0, miss = 0, hits = 0, strong = false;
       pq.terms.forEach(function (t) {
         var s = termScore(p, t); if (!s && !t.soft) miss++; sc += s;
         if (s && !t.soft) { hits++; if (s >= 2.5 && t.w && (t.code || /\d/.test(t.w)) && t.w.length >= 3) strong = true; }
       });
       if (!sc) return;
-      if (!miss) full.push({ p: p, s: sc + boost(p, pq) + litBoost(p, lit, qs) });
+      if (!miss) full.push({ p: p, s: sc + boost(p, pq) + litBoost(p, lit, qs) - (p.h ? (jeBazar(p) ? 7 : 4) : 0) });
+      else if (p.h) return;
       else if (miss === 1 && req.length >= 2) part.push({ p: p, s: sc + boost(p, pq) + litBoost(p, lit, qs) - 4, partial: true });
       /* v1.3: dlhý skopírovaný názov – sedí kód modelu a aspoň polovica slov */
       else if (req.length >= 3 && strong && hits >= 2 && hits * 2 >= req.length) loose.push({ p: p, s: sc + boost(p, pq) - 4 - miss, partial: true });
     });
     var by = function (x, y) { return y.s - x.s; };
     full.sort(by);
+    var nh = 0; full = full.filter(function (x) { return !x.p.h || ++nh <= 8; });
     if (full.length < 4) { part.sort(by); full = full.concat(part.slice(0, 16)); }
     if (!full.length && loose.length) { loose.sort(by); full = loose.slice(0, 12); }
     return { pq: pq, res: dvojice(full) };
@@ -523,7 +541,8 @@
     Object.keys(BRALIAS).forEach(function (a) { if (s.indexOf(' ' + a + ' ') >= 0) add(bm[BRALIAS[a]]); });
     Object.keys(bm).forEach(function (k) {
       var w = ' ' + k.replace(/-/g, ' ') + ' ', w1 = ' ' + k.split('-')[0] + ' ';
-      if (s.indexOf(w) >= 0 || (k.split('-')[0].length >= 4 && s.indexOf(w1) >= 0)) add(bm[k]);
+      /* v1.5: všeobecné prvé slovo (home → Home Assistant pri „home center 3“, „yubii home“) nestačí */
+      if (s.indexOf(w) >= 0 || (k.split('-')[0].length >= 4 && !/^(home|smart)$/.test(k.split('-')[0]) && s.indexOf(w1) >= 0)) add(bm[k]);
     });
     return out.slice(0, 2);
   }
@@ -748,6 +767,11 @@
     if (!p.ok && p.al.length) for (var k = 0; k < p.al.length; k++) {
       var a = IX.byCode.get(p.al[k]);
       if (a && a.ok) return '<div class="hss-alt">' + T.similar + ' <a href="' + esc(a.u) + '">' + esc(a.n) + '</a>' + (cena && !PL ? ' ' + T['for'] + ' ' + money(a.p * RATIO) : '') + '</div>';
+    }
+    /* v1.5: produkt len cez URL, ktorého predaj skončil – prvý viditeľný alternatívny produkt ako náhrada (aj keď nie je skladom) */
+    if (p.h && !p.ok && p.al.length) for (var j = 0; j < p.al.length; j++) {
+      var n = IX.byCode.get(p.al[j]);
+      if (n && !n.h && !konci(n)) return '<div class="hss-alt">' + T.succ + ' <a href="' + esc(n.u) + '">' + esc(n.n) + '</a>' + (cena && !PL ? ' ' + T['for'] + ' ' + money(n.p * RATIO) : '') + '</div>';
     }
     return '';
   }
