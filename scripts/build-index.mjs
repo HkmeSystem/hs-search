@@ -1,5 +1,7 @@
 // Zostaví index pre vyhľadávanie HomeSystem.sk z XML exportu Shoptetu.
 // Spúšťa ho GitHub Actions každých 15 minút. Odkaz na export je v tajomstve EXPORT_URL.
+// v1.4 (18. 11. 2026): aj produkty „len cez URL“ (VISIBILITY detailOnly) s príznakom h:1 – bez tp/sd, nie v bazar.json ani novinkách;
+//   hs-search.js v1.5 ich ukáže len pri konkrétnom dopyte (napr. „home center 3“).
 // v1.3 (17. 11. 2026): navyše uloží aktuálne ceny všetkých kódov (aj variantov) do ceny-snap/<jazyk>.json
 //   pre históriu cien (scripts/ceny.mjs → vetva „ceny“, najnižšia cena za 30 dní).
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -54,7 +56,8 @@ export function productsFromXml(xml, today = new Date().toISOString().slice(0, 1
     if (!e) continue;
     // produkty s variantmi majú kód, cenu, sklad a viditeľnosť len pri jednotlivých variantoch
     const V = kids(kid(e, 'VARIANTS'), 'VARIANT').filter((v) => at(v, 'VISIBLE') !== '0');
-    if (at(e, 'VISIBILITY') !== 'visible') continue;
+    const vis = at(e, 'VISIBILITY'), hid = vis === 'detailOnly';
+    if (vis !== 'visible' && !hid) continue;
     if (V.length ? false : at(e, 'VISIBLE') !== '1') continue;
     if (!V.length && kid(e, 'VARIANTS')) continue;
     const name = at(e, 'NAME'), url = at(e, 'ORIG_URL');
@@ -108,6 +111,7 @@ export function productsFromXml(xml, today = new Date().toISOString().slice(0, 1
     const al = kids(kid(e, 'ALTERNATIVE_PRODUCTS'), 'CODE').map(txt).filter(Boolean); if (al.length) o.al = al;
     const tp = [...prm].join(' '); if (tp) o.tp = tp;
     if (sd) o.sd = sd;
+    if (hid) { o.h = 1; delete o.tp; delete o.sd; }
     out.push(o);
   }
   return { products: out, extCount: ext.length };
@@ -205,7 +209,7 @@ async function buildLang(L, sitemap, smap, base, prev) {
     try { mkdirSync('ceny-snap', { recursive: true }); const pr = pricesFromXml(xml); writeFileSync('ceny-snap/' + L.code + '.json', JSON.stringify(pr)); console.log(L.code + ': ceny', Object.keys(pr).length, 'kódov'); }
     catch (err) { console.log('::warning::' + L.code + ': ceny sa neuložili – ' + err.message); }
   }
-  if (products.length < 100) throw new Error(L.code + ': podozrivo málo produktov (' + products.length + ')');
+  if (products.filter((p) => !p.h).length < 100) throw new Error(L.code + ': podozrivo málo produktov (' + products.length + ')');
   const wrong = products.filter((p) => L.prefix ? !p.u.startsWith(L.prefix + '/') : /^\/(cs|en)\//.test(p.u)).length;
   if (wrong > products.length * 0.1) throw new Error(L.code + ': export neprišiel v správnom jazyku (' + wrong + ' adries nesedí)');
   const home = await get(SHOP + (L.prefix || '') + '/', 2, headers).catch(() => '');
@@ -238,7 +242,7 @@ async function buildLang(L, sitemap, smap, base, prev) {
   const contact = menu.get('kontakty') || menu.get('kontakt') || menu.get('contacts') || menu.get('contact') || (L.prefix + '/kontakty/');
 
   // novinky z hlavnej stránky jazyka
-  const byUrl = new Map(products.map((p) => [p.u, p]));
+  const byUrl = new Map(products.filter((p) => !p.h).map((p) => [p.u, p]));
   // sekcia na titulke: nadpis s triedou homepage-group-title (rovnaký text je aj v menu, ten preskočíme)
   let news = [];
   const titles = [...home.matchAll(/<[a-z0-9]+[^>]*class="[^"]*homepage-group-title[^"]*"[^>]*>([\s\S]*?)<\/(?:h\d|div|span|p)>/gi)];
@@ -290,9 +294,9 @@ async function buildLang(L, sitemap, smap, base, prev) {
 
   // v1.2: bazar.json – nový produkt (kód) → odbalené kusy s rovnakým EAN, skladom a lacnejšie (pre hs-produkt.js v8)
   const poEan = new Map(), bazar = {};
-  for (const p of products) if (p.bz && p.ean && p.s > 0) for (const e of p.ean.split(/\s+/)) { if (!poEan.has(e)) poEan.set(e, []); poEan.get(e).push({ u: p.u, p: p.p, s: p.s }); }
+  for (const p of products) if (!p.h && p.bz && p.ean && p.s > 0) for (const e of p.ean.split(/\s+/)) { if (!poEan.has(e)) poEan.set(e, []); poEan.get(e).push({ u: p.u, p: p.p, s: p.s }); }
   for (const p of products) {
-    if (p.bz || !p.ean) continue;
+    if (p.h || p.bz || !p.ean) continue;
     const k = [...new Set(p.ean.split(/\s+/).flatMap((e) => poEan.get(e) || []))].filter((b) => b.p < p.p).sort((a, b) => a.p - b.p);
     if (k.length) bazar[p.c] = { np: p.p, k };
   }
@@ -302,7 +306,7 @@ async function buildLang(L, sitemap, smap, base, prev) {
   const index = { v: new Date().toISOString(), lang: L.code, p: products, a: articles, n: news, c: catLinks, h: hubs, k: karlik, ct: contact };
   const json = JSON.stringify(index);
   writeFileSync(OUT + '/' + L.file, json);
-  console.log(L.code + ':', products.length, 'produktov,', articles.length, 'článkov,', news.length, 'noviniek,', Object.keys(catLinks).length, 'kategórií,', Math.round(json.length / 1024), 'kB,', Date.now() - t0, 'ms');
+  console.log(L.code + ':', products.length, 'produktov (z toho len cez URL ' + products.filter((p) => p.h).length + '),', articles.length, 'článkov,', news.length, 'noviniek,', Object.keys(catLinks).length, 'kategórií,', Math.round(json.length / 1024), 'kB,', Date.now() - t0, 'ms');
   return { products, catLinks, hubs };
 }
 
