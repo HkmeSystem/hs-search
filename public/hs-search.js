@@ -1,4 +1,4 @@
-/* HomeSystem.sk – nové vyhľadávanie v1.5 (SK/CS/EN) · v1.5 (18. 11. 2026): produkty „len cez URL“ (Shoptet detailOnly, napr. FIBARO Home Center 3 po skončení predaja) sa nájdu pri konkrétnom dopyte – celý názov/fráza („home center 3“, „hc3“), kód alebo EAN; nie sú v značkách, akciách, novinkách ani v stránkach filtrov, max. 8 vo výsledkoch, pod nimi ponuka náhrady skladom · v1.4 (17. 11. 2026): značky – karta značky v okne (Homey → Athom), filter značiek v okne aj na stránke výsledkov, „Funguje s Homey / FIBAROM“, odkazy s ?znacka= a ?funguje= (bez hľadaného slova string=*, napr. /vyhladavanie/?string=*&funguje=homey pre e-maily) · v1.3 (17. 11. 2026): kódy modelov bez pomlčiek (fgs224 = FGS-224, 201-p = 201P, r4 m = R4M, trvzbt = TRV-ZBT), preklepy (sonogf, shely, brdige…), anglické slová z kopírovaných názvov, voľnejšia zhoda pri dlhých názvoch s kódom modelu, presný názov (Shelly Pill) navrch, meranie až po dopísaní · v1.2 (15. 11. 2026): pri nedostupnom produkte ponuka odbaleného kusu skladom (rovnaký EAN); presná zhoda v názve má prednosť aj pri nedostupnom produkte; odbalený kus hneď za novým (rovnaký EAN) | index: index.json, index-cs.json, index-en.json vedľa tohto súboru */
+/* HomeSystem.sk – nové vyhľadávanie v1.6 (SK/CS/EN) · v1.6 (24. 11. 2026): karty na stránke výsledkov majú rovnakú štruktúru ako karty v kategórii Shoptetu (.products-block > .product) → uplatní sa náš akciový rámček s odpočtom (hs-akcie), jednotné tlačidlá (hs-dizajn) a dostupnosť; dátum konca akcie z indexu sa vopred uloží pre hs-akcie (bez načítavania detailu) · v1.5 (18. 11. 2026): produkty „len cez URL“ (Shoptet detailOnly, napr. FIBARO Home Center 3 po skončení predaja) sa nájdu pri konkrétnom dopyte – celý názov/fráza („home center 3“, „hc3“), kód alebo EAN; nie sú v značkách, akciách, novinkách ani v stránkach filtrov, max. 8 vo výsledkoch, pod nimi ponuka náhrady skladom · v1.4 (17. 11. 2026): značky – karta značky v okne (Homey → Athom), filter značiek v okne aj na stránke výsledkov, „Funguje s Homey / FIBAROM“, odkazy s ?znacka= a ?funguje= (bez hľadaného slova string=*, napr. /vyhladavanie/?string=*&funguje=homey pre e-maily) · v1.3 (17. 11. 2026): kódy modelov bez pomlčiek (fgs224 = FGS-224, 201-p = 201P, r4 m = R4M, trvzbt = TRV-ZBT), preklepy (sonogf, shely, brdige…), anglické slová z kopírovaných názvov, voľnejšia zhoda pri dlhých názvoch s kódom modelu, presný názov (Shelly Pill) navrch, meranie až po dopísaní · v1.2 (15. 11. 2026): pri nedostupnom produkte ponuka odbaleného kusu skladom (rovnaký EAN); presná zhoda v názve má prednosť aj pri nedostupnom produkte; odbalený kus hneď za novým (rovnaký EAN) | index: index.json, index-cs.json, index-en.json vedľa tohto súboru */
 (function () {
   'use strict';
   if (window.__HSS_LOADED) return;
@@ -23,7 +23,7 @@
       karTitle: 'Vypínače a zásuvky Karlik', karText: 'Kompletný sortiment Karlik nájdete v samostatnej kategórii.', karAll: 'Celá ponuka Karlik →',
       loading: 'Načítavam produkty…', resFor: 'Výsledky pre', q1: '„', q2: '“', search: 'Vyhľadávanie', searchHint: 'Napíšte, čo hľadáte, alebo skúste niečo z obľúbených hľadaní:',
       onlyStock: 'Len skladom', sort: 'Zoradiť', rel: 'Najrelevantnejšie', asc: 'Najlacnejšie', desc: 'Najdrahšie', more: 'Zobraziť ďalšie', noFilter: 'S týmito filtrami nič nemáme, skúste niektorý vypnúť.',
-      lookingLow: 'hľadám:', fixedLow: 'zobrazujem výsledky pre', detail: 'Detail', yourPrice: 'Vaša cena…', priceInDetail: 'Cena v detaile', searching: 'Hľadám…', blogUrl: '/blog/',
+      lookingLow: 'hľadám:', fixedLow: 'zobrazujem výsledky pre', detail: 'Detail', fAct: 'Zľava', fNew: 'Novinka', fTip: 'Tip', yourPrice: 'Vaša cena…', priceInDetail: 'Cena v detaile', searching: 'Hľadám…', blogUrl: '/blog/',
       plural: function (n) { return n === 1 ? 'produkt' : (n >= 2 && n <= 4) ? 'produkty' : 'produktov'; },
       showAll: function (n) { return (n >= 2 && n <= 4 ? 'Zobraziť všetky ' : 'Zobraziť všetkých ') + n + ' ' + this.plural(n); },
       brand: 'Značka', brands: 'Značky vo výsledkoch', brandAll: 'Celá ponuka značky', inStockN: 'skladom', worksAll: 'Všetky produkty', brandLbl: 'Značka:', allBrands: 'Všetky značky',
@@ -38,7 +38,7 @@
       karTitle: 'Vypínače a zásuvky Karlik', karText: 'Kompletní sortiment Karlik najdete v samostatné kategorii.', karAll: 'Celá nabídka Karlik →',
       loading: 'Načítám produkty…', resFor: 'Výsledky pro', q1: '„', q2: '“', search: 'Vyhledávání', searchHint: 'Napište, co hledáte, nebo zkuste něco z oblíbených hledání:',
       onlyStock: 'Jen skladem', sort: 'Seřadit', rel: 'Nejrelevantnější', asc: 'Nejlevnější', desc: 'Nejdražší', more: 'Zobrazit další', noFilter: 'S těmito filtry nic nemáme, zkuste některý vypnout.',
-      lookingLow: 'hledám:', fixedLow: 'zobrazuji výsledky pro', detail: 'Detail', yourPrice: 'Vaše cena…', priceInDetail: 'Cena v detailu', searching: 'Hledám…', blogUrl: '/cs/blog/',
+      lookingLow: 'hledám:', fixedLow: 'zobrazuji výsledky pro', detail: 'Detail', fAct: 'Sleva', fNew: 'Novinka', fTip: 'Tip', yourPrice: 'Vaše cena…', priceInDetail: 'Cena v detailu', searching: 'Hledám…', blogUrl: '/cs/blog/',
       plural: function (n) { return n === 1 ? 'produkt' : (n >= 2 && n <= 4) ? 'produkty' : 'produktů'; },
       showAll: function (n) { return (n >= 2 && n <= 4 ? 'Zobrazit všechny ' : 'Zobrazit všech ') + n + ' ' + this.plural(n); },
       brand: 'Značka', brands: 'Značky ve výsledcích', brandAll: 'Celá nabídka značky', inStockN: 'skladem', worksAll: 'Všechny produkty', brandLbl: 'Značka:', allBrands: 'Všechny značky',
@@ -53,7 +53,7 @@
       karTitle: 'Karlik switches and sockets', karText: 'You’ll find the full Karlik range in a separate category.', karAll: 'All Karlik products →',
       loading: 'Loading products…', resFor: 'Results for', q1: '“', q2: '”', search: 'Search', searchHint: 'Type what you’re looking for, or try a popular search:',
       onlyStock: 'In stock only', sort: 'Sort', rel: 'Most relevant', asc: 'Lowest price', desc: 'Highest price', more: 'Show more', noFilter: 'Nothing matches these filters, try turning one off.',
-      lookingLow: 'looking for:', fixedLow: 'showing results for', detail: 'Details', yourPrice: 'Your price…', priceInDetail: 'Price on product page', searching: 'Searching…', blogUrl: '/en/blog/',
+      lookingLow: 'looking for:', fixedLow: 'showing results for', detail: 'Details', fAct: 'Sale', fNew: 'New', fTip: 'Tip', yourPrice: 'Your price…', priceInDetail: 'Price on product page', searching: 'Searching…', blogUrl: '/en/blog/',
       plural: function (n) { return n === 1 ? 'product' : 'products'; },
       showAll: function (n) { return 'Show all ' + n + ' ' + this.plural(n); },
       brand: 'Brand', brands: 'Brands in results', brandAll: 'All products of the brand', inStockN: 'in stock', worksAll: 'All products', brandLbl: 'Brand:', allBrands: 'All brands',
@@ -649,16 +649,12 @@
     '.hsp-cat:hover{background:#0d5a8f}.hsp-cat b{min-width:24px;height:22px;padding:0 7px;border-radius:999px;background:#ffc807;color:#1f1f1f;font:700 12px/22px "Exo 2",sans-serif;text-align:center}' +
     '.hsp-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid #e3eef7;border-bottom:1px solid #e3eef7;margin:14px 0 16px}' +
     '.hsp-sort{font:14px "Source Sans 3",sans-serif;padding:6px 10px;border:1px solid #cfe3f2;border-radius:6px;color:#0d5a8f;background:#fff}' +
-    '.hsp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}' +
-    '.hsp-card{display:flex;flex-direction:column;border:1px solid #e3eef7;border-radius:10px;padding:12px;background:#fff;cursor:pointer;transition:border-color .15s,box-shadow .15s}.hsp-card:hover{border-color:#1272b3;box-shadow:0 8px 22px rgba(13,90,143,.12)}' +
-    '.hsp-flags{min-height:22px}.hsp-img{display:block;width:100%;height:150px;object-fit:contain;margin:2px 0 10px}' +
-    '.hsp-name{font-weight:600;font-size:15px;line-height:1.3;color:#1f1f1f!important;text-decoration:none!important}.hsp-name b{color:#1272b3}' +
-    '.hsp-card .hss-meta{margin:6px 0 10px}.hsp-bot{margin-top:auto;display:flex;align-items:flex-end;justify-content:space-between;gap:8px}.hsp-bot .hss-price{text-align:left}' +
-    '.hsp-detail{font:700 12px "Exo 2",sans-serif;text-transform:uppercase;color:#1272b3!important;text-decoration:none!important}' +
+    '.hsp .products-block{margin:0 0 10px}.hsp .product.hsp-card{cursor:pointer}.hsp .product .name b{font-weight:inherit;color:#1272b3}' +
+    '.hsp .product .hss-alt{margin:6px 0 0;font-size:13px;line-height:1.35}' +
     '.hsp-arts{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin:8px 0 18px}.hsp-art{display:block;border-radius:10px;background:#1272b3;color:#fff!important;padding:14px 16px;text-decoration:none!important}' +
     '.hsp-art:hover{background:#0d5a8f}.hsp-art span{font-weight:700;display:block;font-size:15px}.hsp-art small{color:#cfe6f7;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px;font-size:13px}' +
     '.hsp .hss-more{max-width:360px;margin:20px auto 0}' +
-    '@media(max-width:520px){.hsp-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.hsp-img{height:110px}.hsp-card{padding:8px}.hsp-name{font-size:14px}.hsp-bot{flex-direction:column;align-items:stretch}.hsp-title{font-size:21px}.hsp-card .hss-tag:nth-of-type(n+2){display:none}}' +
+    '@media(max-width:520px){.hsp-name{font-size:14px}.hsp-bot{flex-direction:column;align-items:stretch}.hsp-title{font-size:21px}.hsp-card .hss-tag:nth-of-type(n+2){display:none}}' +
     'body.hsp-on main.content > *:not(.hsp){display:none!important}' +
     '.hss-pend{font:600 12.5px "Source Sans 3",sans-serif;color:#6b7680}.hss-pulse{animation:hssp 1.2s ease-in-out infinite}@keyframes hssp{50%{opacity:.4}}@media (prefers-reduced-motion:reduce){.hss-pulse{animation:none}}' +
     '.search-whisperer{display:none!important}';
@@ -917,17 +913,59 @@
     if (cats.length && cc[cats[0]] >= 6) cats = cats.filter(function (c) { return cc[c] >= 6; });
     return cats.slice(0, 6).map(function (c) { return [c, cn[c]]; });
   }
+  /* v1.6: karta v rovnakej štruktúre ako karta v kategórii Shoptetu – vzhľad, akciový rámček, odpočet,
+     tlačidlá a dostupnosť doplnia hs-dizajn.css, hs-akcie.css a hs-akcie.js (sledujú zmeny stránky) */
+  var FLAGC = { custom1: 'background-color:#9b9ee8;', custom3: 'background-color:#0d7faf;' };
+  function shFlags(p) {
+    var h = '', has = function (c) { return p.fl.indexOf(c) >= 0; };
+    var akcia = !!p.un || has('action');
+    if (akcia && !PL && RATIO === 1) h += '<span class="flag flag-action" style="background-color:#f60404;">' + T.fAct + '</span>';
+    if (has('new') || NEW.indexOf(p) >= 0) h += '<span class="flag flag-new">' + T.fNew + '</span>';
+    if (has('tip')) h += '<span class="flag flag-tip">' + T.fTip + '</span>';
+    if (has('custom1')) h += '<span class="flag flag-custom1" style="' + FLAGC.custom1 + '">' + T.fibaro + '</span>';
+    if (has('custom3')) h += '<span class="flag flag-custom3" style="' + FLAGC.custom3 + '">' + T.homey + '</span>';
+    var x = '';
+    if (p.o > p.p && !PL && RATIO === 1) x = '<span class="flag flag-discount"><span class="price-standard"><span>' + money(p.o) + '</span></span><span class="price-save">–' + Math.round((p.o - p.p) / p.o * 100) + ' %</span></span>';
+    return (h ? '<div class="flags flags-default">' + h + '</div>' : '') + (x ? '<div class="flags flags-extra">' + x + '</div>' : '');
+  }
+  function shAvail(p) {
+    if (p.ok) return '<span style="color:#009901">' + T.stock + '</span> <span class="availability-amount">(' + (p.s > 50 ? '&gt;50' : Math.round(p.s)) + ' ' + T.pcs + ')</span>';
+    if (p.ext) return '<span style="color:#1272b3">' + T.central + '</span>';
+    var a = norm(p.a);
+    if (/dodani|objednavk|deliver|to order|on order|within|tesime|coming/.test(a)) return '<span style="color:#1272b3">' + esc(p.a) + '</span>';
+    return '<span style="color:#cb0000">' + esc(p.a || T.unavail) + '</span>';
+  }
+  function shPrice(p) {
+    if (PL) return '<div class="price price-final"><strong data-pu="' + esc(p.u) + '" data-pm="1">' + priceInner(p.u, true) + '</strong></div>';
+    return '<div class="price price-final"><strong>' + (p.f ? T.from : '') + money(p.p * RATIO) + '</strong></div>';
+  }
+  /* hs-akcie.js si dátum konca akcie inak načíta z detailu produktu – index ho už má */
+  function akciaDo(list) {
+    if (PL || RATIO !== 1) return;
+    try {
+      var now = Date.now();
+      list.forEach(function (p) {
+        if (!(p.o > p.p)) return;
+        var k = 'hs-akcia-do:' + new URL(p.u, location.href).href.split('#')[0];
+        var v = JSON.parse(localStorage.getItem(k) || 'null');
+        if (!v || now - v.t > 3e5) localStorage.setItem(k, JSON.stringify({ d: p.un || null, t: now }));
+      });
+    } catch (e) {}
+  }
   function card(p, pq, i) {
-    var alt = '';
-    alt = altHtml(p, false);
-    var tags = p.proto.slice(0, 2).map(function (x) { return '<span class="hss-tag">' + x + '</span>'; }).join('') +
-      (p.fl.indexOf('custom3') >= 0 ? '<span class="hss-tag">' + T.homey + '</span>' : '') + (p.fl.indexOf('custom1') >= 0 ? '<span class="hss-tag">' + T.fibaro + '</span>' : '');
-    return '<div class="hsp-card" data-i="' + (i || 0) + '" data-u="' + esc(p.u) + '"><div class="hsp-flags">' + flagHtml(p) + '</div>' +
-      '<a href="' + esc(p.u) + '" tabindex="-1">' + imgTag(p.i, 'hsp-img', 'detail_small') + '</a>' +
-      '<a class="hsp-name" href="' + esc(p.u) + '">' + hl(p.n, pq) + '</a>' +
-      '<div class="hss-meta">' + availHtml(p) + tags + '</div>' + alt +
-      '<div class="hsp-bot"><div class="hss-price">' + priceHtml(p) + '</div>' +
-      (p.ok && !p.f && !p.v && canCart() ? '<button type="button" class="hss-cart" data-c="' + esc(p.c) + '">' + T.cart + '</button>' : '<a class="hsp-detail" href="' + esc(p.u) + '">' + T.detail + '</a>') + '</div></div>';
+    var alt = altHtml(p, false), cart = p.ok && !p.f && !p.v && canCart();
+    return '<div class="product hsp-card" data-i="' + (i || 0) + '" data-u="' + esc(p.u) + '"><div class="p">' +
+      '<a class="image" href="' + esc(p.u) + '" tabindex="-1"><img alt="' + esc(p.n) + '" loading="lazy" width="423" height="318" src="' + esc(thumb(p.i, 'detail')) + '" onerror="this.onerror=null;this.src=\'' + esc(p.i) + '\'">' + shFlags(p) + '</a>' +
+      '<div class="p-in"><div class="p-in-in"><a class="name" href="' + esc(p.u) + '"><span>' + hl(p.n, pq) + '</span></a>' +
+      '<div class="ratings-wrapper"><div class="availability">' + shAvail(p) + '</div></div>' + alt + '</div>' +
+      '<div class="p-bottom' + (cart ? '' : ' single-button') + '"><div><div class="prices">' + shPrice(p) + '</div><div class="p-tools">' +
+      (cart ? '<button type="button" class="btn btn-cart add-to-cart-button" data-c="' + esc(p.c) + '" aria-label="' + esc(T.cart + ' ' + p.n) + '"><span>' + T.cart + '</span></button>'
+            : '<a class="btn btn-primary" href="' + esc(p.u) + '">' + T.detail + '</a>') +
+      '</div></div></div></div></div></div>';
+  }
+  function grid(list, pq) {
+    akciaDo(list);
+    return '<div class="products products-page products-block hsp-grid">' + list.map(function (p, i) { return card(p, pq, i); }).join('') + '</div>';
   }
   function renderPage() {
     if (!PG.root || !IX) return;
@@ -978,7 +1016,7 @@
     if (!all.length && !(KARLIK && kStrong)) h += '<div class="hss-empty">' + T.none1 + esc(q) + T.none2 + '<a href="' + esc(CONTACT) + '">' + T.none3 + '</a>' + T.none4 + '</div><div class="hss-chips">' +
       POPULAR.map(function (x) { return '<button type="button" class="hss-chip" data-q="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>';
     if (all.length && !list.length) h += '<div class="hss-empty">' + T.noFilter + '</div>';
-    h += '<div class="hsp-grid">' + list.slice(0, PG.lim).map(function (p, i) { return card(p, pq, i); }).join('') + '</div>';
+    h += grid(list.slice(0, PG.lim), pq);
     if (list.length > PG.lim) h += '<button type="button" class="hss-more" data-pmore="1">' + T.more + ' (' + (list.length - PG.lim) + ')</button>';
     var zb = list.slice(0, 12).filter(function (p) { return p.proto.indexOf('Zigbee') >= 0 && p.proto.indexOf('Wi-Fi') < 0; }).length;
     var zw = list.slice(0, 12).filter(function (p) { return p.proto.indexOf('Z-Wave') >= 0; }).length;
@@ -1023,7 +1061,7 @@
       }).join('') + '</div>';
     } else if (b && PG.eco) h += '<div class="hss-chips hsp-brands"><button type="button" class="hss-chip on" data-pb="' + esc(b.s) + '">' + esc(brandLabel(b)) + ' ✕</button></div>';
     if (!list.length) h += '<div class="hss-empty">' + T.noFilter + '</div>';
-    h += '<div class="hsp-grid">' + list.slice(0, PG.lim).map(function (p, i) { return card(p, pq, i); }).join('') + '</div>';
+    h += grid(list.slice(0, PG.lim), pq);
     if (list.length > PG.lim) h += '<button type="button" class="hss-more" data-pmore="1">' + T.more + ' (' + (list.length - PG.lim) + ')</button>';
     PG.root.innerHTML = h;
     if (PL) livePrices(list.slice(0, PG.lim));
@@ -1043,7 +1081,7 @@
       ev.preventDefault();
       var cc = cart.closest('.hsp-card');
       if (cc && PG.shown) trackItem(PG.shown[+cc.getAttribute('data-i')], +cc.getAttribute('data-i') + 1, 'page', PG.q, 'search_add_to_cart');
-      try { shoptet.cartShared.addToCart({ productCode: cart.getAttribute('data-c') }); cart.textContent = T.added; }
+      try { shoptet.cartShared.addToCart({ productCode: cart.getAttribute('data-c') }); cart.innerHTML = '<span>' + T.added + '</span>'; }
       catch (e) { var p = IX.byCode.get(cart.getAttribute('data-c')); if (p) location.href = p.u; }
       return;
     }
