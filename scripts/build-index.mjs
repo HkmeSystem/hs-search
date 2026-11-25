@@ -1,5 +1,7 @@
 // Zostaví index pre vyhľadávanie HomeSystem.sk z XML exportu Shoptetu.
 // Spúšťa ho GitHub Actions každých 15 minút. Odkaz na export je v tajomstve EXPORT_URL.
+// v1.5 (25. 11. 2026): produkty Karlik (výrobca Karlik, externý sklad) idú do samostatného karlik.json / karlik-cs.json / karlik-en.json
+//   (len kód, názov, adresa, obrázok, cena, dostupnosť, EAN) – hs-search.js v1.7 ho stiahne až pri dopyte, ktorý ho potrebuje.
 // v1.4 (18. 11. 2026): aj produkty „len cez URL“ (VISIBILITY detailOnly) s príznakom h:1 – bez tp/sd, nie v bazar.json ani novinkách;
 //   hs-search.js v1.5 ich ukáže len pri konkrétnom dopyte (napr. „home center 3“).
 // v1.3 (17. 11. 2026): navyše uloží aktuálne ceny všetkých kódov (aj variantov) do ceny-snap/<jazyk>.json
@@ -48,7 +50,7 @@ const at = (n, ...path) => { for (const p of path) n = kid(n, p); return txt(n);
 
 /* ---------- produkty ---------- */
 export function productsFromXml(xml, today = new Date().toISOString().slice(0, 10)) {
-  const out = [], ext = [];
+  const out = [], ext = [], kar = [];
   const re = /<SHOPITEM(?:\s[^>]*)?>([\s\S]*?)<\/SHOPITEM>/g;
   let mm;
   while ((mm = re.exec(xml))) {
@@ -87,7 +89,9 @@ export function productsFromXml(xml, today = new Date().toISOString().slice(0, 1
     const cats = kids(C, 'CATEGORY').map((c) => clean(txt(c)));
     const dc = clean(at(C, 'DEFAULT_CATEGORY'));
     const isExt = flags.includes('externy-sklad') || /^centr/i.test(avail.normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
-    if (isExt) { ext.push(dc); continue; }
+    const isKar = /karlik/i.test(at(e, 'MANUFACTURER'));
+    if (isKar && hid) continue;
+    if (isExt && !isKar) { ext.push(dc); continue; }
     const prm = new Set(), proto = [];
     for (const p of kids(kid(e, 'INFORMATION_PARAMETERS'), 'INFORMATION_PARAMETER')) {
       const n = at(p, 'NAME');
@@ -112,9 +116,10 @@ export function productsFromXml(xml, today = new Date().toISOString().slice(0, 1
     const tp = [...prm].join(' '); if (tp) o.tp = tp;
     if (sd) o.sd = sd;
     if (hid) { o.h = 1; delete o.tp; delete o.sd; }
+    if (isKar) { delete o.cat; delete o.tp; delete o.sd; delete o.al; if (!o.pr) delete o.pr; if (!o.fl.length) delete o.fl; kar.push(o); continue; }
     out.push(o);
   }
-  return { products: out, extCount: ext.length };
+  return { products: out, extCount: ext.length, karlik: kar };
 }
 
 /* ---------- v1.3: ceny pre históriu (každý kód produktu aj varianty, aj skryté) ---------- */
@@ -137,7 +142,7 @@ export function pricesFromXml(xml) {
 }
 
 /* ---------- pomocné stiahnutie ---------- */
-const UA = 'HomeSystem-search-index/1.3';
+const UA = 'HomeSystem-search-index/1.5';
 const label = (url) => url === EXPORT_URL ? 'export' : url.replace(/[?#].*$/, '');
 async function get(url, tries = 3, headers = {}) {
   for (let t = 1; ; t++) {
@@ -203,7 +208,11 @@ async function buildLang(L, sitemap, smap, base, prev) {
   const t0 = Date.now();
   const headers = await langSession(L.code);
   const xml = await get(EXPORT_URL, 3, headers);
-  const { products } = productsFromXml(xml);
+  const { products, karlik: karP } = productsFromXml(xml);
+  // v1.5: Karlik do samostatného súboru (pri podozrivo malom počte ponecháme predchádzajúci)
+  const kFile = L.file.replace('index', 'karlik');
+  if (karP.length >= 100) { writeFileSync(OUT + '/' + kFile, JSON.stringify({ v: new Date().toISOString(), lang: L.code, p: karP })); console.log(L.code + ': Karlik', karP.length, 'produktov'); }
+  else await keepPrevious(kFile, 'Karlik len ' + karP.length + ' produktov');
   if (L.code !== 'en') {
     // v1.3: snímka cien pre históriu (chyba tu nesmie zastaviť index)
     try { mkdirSync('ceny-snap', { recursive: true }); const pr = pricesFromXml(xml); writeFileSync('ceny-snap/' + L.code + '.json', JSON.stringify(pr)); console.log(L.code + ': ceny', Object.keys(pr).length, 'kódov'); }
@@ -310,11 +319,20 @@ async function buildLang(L, sitemap, smap, base, prev) {
   return { products, catLinks, hubs };
 }
 
+// predchádzajúci zverejnený súbor (pri chybe zostane na webe posledná funkčná verzia)
+let PAGES = '';
+async function keepPrevious(file, why) {
+  console.log('::warning::' + file + ': ' + why);
+  const prev = PAGES ? await previous(PAGES, file) : null;
+  if (prev) { writeFileSync(OUT + '/' + file, JSON.stringify(prev)); console.log(file + ': ponechaný predchádzajúci z ' + prev.v); }
+}
+
 async function main() {
   if (!EXPORT_URL) throw new Error('Chýba tajomstvo EXPORT_URL.');
   mkdirSync(OUT, { recursive: true });
   const repo = process.env.GITHUB_REPOSITORY || '';
   const pages = process.env.PAGES_URL || (repo ? 'https://' + repo.split('/')[0].toLowerCase() + '.github.io/' + repo.split('/')[1] + '/' : '');
+  PAGES = pages;
   const sitemap = await get(SHOP + '/sitemap.xml').catch(() => '');
   const smap = new Set([...sitemap.matchAll(/<loc>https?:\/\/[^/<]+(\/[^<]*)<\/loc>/g)].map((m) => m[1]));
   let base = null, fails = 0;
@@ -330,6 +348,7 @@ async function main() {
       console.log('::warning::' + L.code + ': ' + err.message);
       if (prev) { writeFileSync(OUT + '/' + L.file, JSON.stringify(prev)); console.log(L.code + ': ponechaný predchádzajúci index z ' + prev.v); }
       else console.log(L.code + ': predchádzajúci index nie je k dispozícii');
+      await keepPrevious(L.file.replace('index', 'karlik'), 'index jazyka zlyhal');
     }
     await sleep(15000); // pauza medzi jazykmi
   }
